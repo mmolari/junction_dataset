@@ -65,9 +65,25 @@ rule build_junction_pangraph:
         """
 
 
+rule genome_lengths:
+    input:
+        expand(rules.download_gbk.output, acc=acc_nums),
+    output:
+        "results/genome_lengths.csv",
+    conda:
+        "config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python scripts/genome_lengths.py \
+            --output {output} \
+            --gbk_files {input}
+        """
+
+
 rule all:
     input:
         expand(rules.build_junction_pangraph.output, junc=junc_ids),
+        rules.genome_lengths.output,
 
 
 localrules:
