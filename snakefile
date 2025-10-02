@@ -62,3 +62,7 @@ rule build_junction_pangraph:
 rule all:
     input:
         expand(rules.build_junction_pangraph.output, junc=junc_ids[:3]),
+
+
+localrules:
+    download_gbk,
