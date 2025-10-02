@@ -4,7 +4,8 @@ This repository contains a simple pipeline to prepare and format the dataset of 
 
 ## Setup
 
-To run the pipeline you will need to have [Snakemake](https://snakemake.readthedocs.io/en/stable/) and [Conda](https://docs.conda.io/en/latest/) installed.
+To run the pipeline you will need to have [Snakemake](https://snakemake.readthedocs.io/en/stable/) (tested on v9.11) and [Conda](https://docs.conda.io/en/latest/) installed.
+Moreover you will need to have the [PanGraph](https://github.com/neherlab/pangraph) (v1.2.1) binary available in your PATH.
 
 ## Usage
 
