@@ -35,6 +35,8 @@ rule extract_junction_sequences:
         gff="results/junction_annotations/{junc}.gff",
     conda:
         "config/conda_envs/bioinfo.yaml"
+    log:
+        "logs/extract_junctions_{junc}.log",
     shell:
         """
         python scripts/extract_junctions.py \
@@ -42,7 +44,8 @@ rule extract_junction_sequences:
             --junc-id {wildcards.junc} \
             --junc-pos-file {input.j_pos} \
             --out-fa {output.fa} \
-            --out-ann {output.gff}
+            --out-ann {output.gff} \
+            &> {log}
         """
 
 
@@ -61,7 +64,7 @@ rule build_junction_pangraph:
 
 rule all:
     input:
-        expand(rules.build_junction_pangraph.output, junc=junc_ids[:3]),
+        expand(rules.build_junction_pangraph.output, junc=junc_ids),
 
 
 localrules:
