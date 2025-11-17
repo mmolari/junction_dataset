@@ -110,3 +110,4 @@ rule all:
 
 localrules:
     download_gbk,
+    plasmids,
