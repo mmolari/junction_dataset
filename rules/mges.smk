@@ -52,7 +52,7 @@ rule mge_assign_positions:
     output:
         "results/mges_to_junctions/{tool}.csv",
     conda:
-        "../conda_env/bioinfo.yml"
+        "../config/conda_envs/bioinfo.yaml"
     params:
         zero_based="--zero_based",
         random="",
