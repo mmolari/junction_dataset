@@ -32,6 +32,19 @@ rule download_gbk:
         """
 
 
+rule gbk_to_fa:
+    input:
+        gbk="data/gbk/{acc}.gbk",
+    output:
+        fa="data/fasta/{acc}.fa",
+    conda:
+        "config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/gbk_to_fa.py --gbk {input.gbk} --fa {output.fa}
+        """
+
+
 rule extract_junction_sequences:
     input:
         gbk=expand(rules.download_gbk.output, acc=acc_nums),
@@ -116,14 +129,19 @@ def all_plasmid_outputs(wildcards):
     return outs
 
 
+include: "rules/mges.smk"
+
+
 rule all:
     input:
         expand(rules.build_junction_pangraph.output, junc=junc_ids),
         rules.genome_lengths.output,
         all_plasmid_outputs,
         rules.junction_stats.output,
+        rules.GM_preformat.output,
 
 
 localrules:
     download_gbk,
     plasmids,
+    GM_download_db,

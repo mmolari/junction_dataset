@@ -20,7 +20,7 @@ def _():
 
 @app.cell
 def _(pd):
-    _fname = f"config/junction_stats.csv"
+    _fname = f"results/junction_stats.csv"
     jdf = pd.read_csv(_fname)
     jdf
     return (jdf,)
@@ -28,8 +28,8 @@ def _(pd):
 
 @app.cell
 def _(alt, jdf, mo, np):
-    # _xvar = "nonempty_acc_len"
-    _xvar = "pangenome_len"
+    _xvar = "nonempty_acc_len"
+    # _xvar = "pangenome_len"
     _yvar = "n_categories"
     _cvar = "nonempty_freq"
     _yvar_jiggle = _yvar + "_jiggle"
@@ -86,7 +86,7 @@ def _(jdf, mo, pan):
     N_genomes_tot = jdf["n_iso"].max()
     entry = jdf.query("edge == @selected_edge").iloc[0]
     N_path_categories = entry["n_categories"]
-    acc_gen_len = entry["pangenome_len"]
+    acc_gen_len = entry["nonempty_acc_len"]
     mo.md(f"""
     ## summary stats
 
