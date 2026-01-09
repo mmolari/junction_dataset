@@ -138,10 +138,10 @@ rule all:
         rules.genome_lengths.output,
         all_plasmid_outputs,
         rules.junction_stats.output,
-        rules.GM_preformat.output,
+        rules.genomad_preformat.output,
 
 
 localrules:
     download_gbk,
     plasmids,
-    GM_download_db,
+    genomad_download_db,
