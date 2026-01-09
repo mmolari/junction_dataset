@@ -16,13 +16,16 @@ rule genomad_run:
     output:
         d=directory("data/genomad/{acc}"),
         s="data/genomad/{acc}/{acc}_summary/{acc}_virus_summary.tsv",
+    log:
+        "logs/genomad/{acc}.log",
     conda:
         "../config/conda_envs/genomad.yaml"
     shell:
         """
         genomad end-to-end {input.fa} {output.d} {input.db} \
             --cleanup \
-            --threads 4
+            --threads 4 \
+            &> {log}
         """
 
 
