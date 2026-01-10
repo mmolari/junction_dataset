@@ -44,6 +44,74 @@ rule genomad_preformat:
         """
 
 
+rule defensefinder_models_download:
+    output:
+        directory("data/defensefinder_models"),
+    conda:
+        "../config/conda_envs/defensefinder.yaml"
+    shell:
+        """
+        TMPDIR=$(mktemp -d -t defensefinder_model_download_XXXXXXXXX)
+        echo "created temporary directory $TMPDIR"
+        defense-finder update --models-dir {output}
+        rm -r $TMPDIR
+        """
+
+
+rule defensefinder_find:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+        mod=rules.defensefinder_models_download.output,
+    output:
+        a=directory("data/defense_finder/{acc}"),
+        g="data/defense_finder/{acc}/{acc}_defense_finder_genes.tsv",
+        s="data/defense_finder/{acc}/{acc}_defense_finder_systems.tsv",
+        p="data/defense_finder/{acc}/{acc}.prt",
+    conda:
+        "../config/conda_envs/defensefinder.yaml"
+    shell:
+        """
+        defense-finder run \
+            -o {output.a} \
+            --models-dir {input.mod} \
+            {input.fa}
+        """
+
+
+rule defensefinder_gene_location:
+    input:
+        g=rules.defensefinder_find.output.g,
+        p=rules.defensefinder_find.output.p,
+    output:
+        temp("data/defense_finder/{acc}/{acc}_genes_loc.tsv"),
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/defensefinder_gene_location.py \
+            --input_gene_df {input.g} \
+            --proteins {input.p} \
+            --output_gene_df {output}
+        """
+
+
+rule defensefinder_preformat:
+    input:
+        s=expand(rules.defensefinder_find.output.s, acc=acc_nums),
+        g=expand(rules.defensefinder_gene_location.output, acc=acc_nums),
+    output:
+        "results/mges/defensefinder.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/defensefinder_df_preformat.py \
+            --input_genes {input.g} \
+            --input_systems {input.s} \
+            --output_df {output}
+        """
+
+
 rule mge_assign_positions:
     input:
         el="results/mges/{tool}.csv",
@@ -68,6 +136,6 @@ rule mge_assign_positions:
         """
 
 
-rule mge_all:
+rule mges_all:
     input:
-        expand(rules.mge_assign_positions.output, tool=["genomad"]),
+        expand(rules.mge_assign_positions.output, tool=["genomad", "defensefinder"]),

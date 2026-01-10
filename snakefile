@@ -21,6 +21,12 @@ with open(config["plasmids_file"]) as f:
     plasmids = json.load(f)
 
 
+wildcard_constraints:
+    acc="[^/]+",
+    junc="[^/]+",
+    acc_iso="[^/]+",
+
+
 rule download_gbk:
     output:
         "data/gbk/{acc}.gbk",
@@ -138,10 +144,10 @@ rule all:
         rules.genome_lengths.output,
         all_plasmid_outputs,
         rules.junction_stats.output,
-        rules.genomad_preformat.output,
 
 
 localrules:
     download_gbk,
     plasmids,
     genomad_download_db,
+    defensefinder_models_download,
