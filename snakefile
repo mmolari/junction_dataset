@@ -15,9 +15,10 @@ with open(config["plasmids_file"]) as f:
 
 # optional NCBI API key (gitignored). Raises efetch rate limit from 3 to 10 req/s.
 ncbi_api_key_file = Path("config/ncbi_api_key.txt")
-NCBI_API_KEY = ncbi_api_key_file.read_text().strip() if ncbi_api_key_file.exists() else ""
+NCBI_API_KEY = (
+    ncbi_api_key_file.read_text().strip() if ncbi_api_key_file.exists() else ""
+)
 # seconds to sleep after each NCBI download to stay under rate limits
-NCBI_DOWNLOAD_SLEEP = config.get("ncbi_download_sleep", 2)
 
 
 wildcard_constraints:
@@ -30,16 +31,13 @@ rule download_gbk:
     output:
         "data/gbk/{acc}.gbk",
     conda:
-        "config/conda_envs/entrez_direct.yaml"
+        "config/conda_envs/ncbi_acc_download.yaml"
     params:
-        api_key_export=(
-            f"export NCBI_API_KEY={NCBI_API_KEY}" if NCBI_API_KEY else ""
-        ),
-        sleep=NCBI_DOWNLOAD_SLEEP,
+        api_key_arg=(f"--api-key {NCBI_API_KEY}" if NCBI_API_KEY else ""),
+        sleep=2,  # sleep time in seconds to stay under NCBI rate limits
     shell:
         """
-        {params.api_key_export}
-        efetch -db nucleotide -id {wildcards.acc} -format gbwithparts > {output}
+        ncbi-acc-download --out {output} {params.api_key_arg} {wildcards.acc}
         sleep {params.sleep}
         """
 
