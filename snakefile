@@ -34,11 +34,9 @@ rule download_gbk:
         "config/conda_envs/ncbi_acc_download.yaml"
     params:
         api_key_arg=(f"--api-key {NCBI_API_KEY}" if NCBI_API_KEY else ""),
-        sleep=2,  # sleep time in seconds to stay under NCBI rate limits
     shell:
         """
         ncbi-acc-download --out {output} {params.api_key_arg} {wildcards.acc}
-        sleep {params.sleep}
         """
 
 
