@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+from pathlib import Path
 
 
 configfile: "config/config.yaml"
@@ -11,6 +12,12 @@ print(f"N. isolates: {len(acc_nums)}")
 # list of plasmids
 with open(config["plasmids_file"]) as f:
     plasmids = json.load(f)
+
+# optional NCBI API key (gitignored). Raises efetch rate limit from 3 to 10 req/s.
+ncbi_api_key_file = Path("config/ncbi_api_key.txt")
+NCBI_API_KEY = ncbi_api_key_file.read_text().strip() if ncbi_api_key_file.exists() else ""
+# seconds to sleep after each NCBI download to stay under rate limits
+NCBI_DOWNLOAD_SLEEP = config.get("ncbi_download_sleep", 2)
 
 
 wildcard_constraints:
@@ -24,11 +31,16 @@ rule download_gbk:
         "data/gbk/{acc}.gbk",
     conda:
         "config/conda_envs/entrez_direct.yaml"
-    resources:
-        ncbi=1,
+    params:
+        api_key_export=(
+            f"export NCBI_API_KEY={NCBI_API_KEY}" if NCBI_API_KEY else ""
+        ),
+        sleep=NCBI_DOWNLOAD_SLEEP,
     shell:
         """
+        {params.api_key_export}
         efetch -db nucleotide -id {wildcards.acc} -format gbwithparts > {output}
+        sleep {params.sleep}
         """
 
 

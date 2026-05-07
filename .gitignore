@@ -1,6 +1,7 @@
 /results
 /data
 /config/config
+/config/ncbi_api_key.txt
 /.snakemake
 __pycache__
 /playground
