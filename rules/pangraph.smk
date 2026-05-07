@@ -6,7 +6,7 @@ rule build_pangraph:
     input:
         expand(rules.gbk_to_fa.output, acc=acc_nums),
     output:
-        "results/pangraph.json",
+        "results/pangraph.json.gz",
     log:
         "logs/build_pangraph.log",
     threads: 8

@@ -4,15 +4,17 @@ local-cores: 1
 use-conda: true
 executor: "slurm"
 latency-wait: 30
+resources:
+  ncbi: 2
 default-resources:
   mem_mb: 16000
-  slurm_extra: "'--qos=30min'"
   runtime: 29m
+  qos: "30min"
 set-resources:
   genomad_run:
     mem_mb: 60000
     cpus_per_task: 4
   build_pangraph:
     cpus_per_task: 8
-    slurm_extra: "'--qos=6h'"
     runtime: 350m
+    qos: "6hours"

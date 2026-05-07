@@ -30,8 +30,11 @@ wildcard_constraints:
 rule download_gbk:
     output:
         "data/gbk/{acc}.gbk",
+    retries: 3
     conda:
         "config/conda_envs/ncbi_acc_download.yaml"
+    resources:
+        ncbi=1,
     params:
         api_key_arg=(f"--api-key {NCBI_API_KEY}" if NCBI_API_KEY else ""),
     shell:
