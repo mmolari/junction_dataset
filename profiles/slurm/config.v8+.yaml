@@ -1,5 +1,5 @@
 jobs: 15
-cores: 100
+cores: 1
 local-cores: 1
 use-conda: true
 executor: "slurm"
