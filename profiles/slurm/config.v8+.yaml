@@ -12,3 +12,7 @@ set-resources:
   genomad_run:
     mem_mb: 60000
     cpus_per_task: 4
+  build_pangraph:
+    cpus_per_task: 8
+    slurm_extra: "'--qos=6h'"
+    runtime: 5h50m
