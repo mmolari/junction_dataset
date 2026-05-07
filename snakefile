@@ -24,6 +24,8 @@ rule download_gbk:
         "data/gbk/{acc}.gbk",
     conda:
         "config/conda_envs/entrez_direct.yaml"
+    resources:
+        ncbi=1,
     shell:
         """
         efetch -db nucleotide -id {wildcards.acc} -format gbwithparts > {output}
