@@ -1,9 +1,9 @@
+jobs: 15
+cores: 150
 local-cores: 1
-cores: 1
 use-conda: true
 executor: "slurm"
 latency-wait: 30
-jobs: 15
 default-resources:
   mem_mb: 16000
   slurm_extra: "'--qos=30min'"
@@ -15,4 +15,4 @@ set-resources:
   build_pangraph:
     cpus_per_task: 8
     slurm_extra: "'--qos=6h'"
-    runtime: 5h50m
+    runtime: 350m
