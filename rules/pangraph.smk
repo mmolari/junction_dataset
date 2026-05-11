@@ -67,10 +67,12 @@ def core_block_alignments(wildcards):
     import pandas as pd
 
     stats = pd.read_csv(stats_file)
-    core_ids = stats.loc[stats["core"], "id"].astype(str).tolist()
+    min_len = config["core_block_min_length"]
+    mask = stats["core"] & (stats["len"] >= min_len)
+    block_ids = stats.loc[mask, "id"].astype(str).tolist()
     return expand(
         "results/pangraph_core_block_alignments/block_{block_id}.fa",
-        block_id=core_ids,
+        block_id=block_ids,
     )
 
 
