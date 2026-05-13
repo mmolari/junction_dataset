@@ -6,7 +6,7 @@ rule build_pangraph:
     input:
         expand(rules.gbk_to_fa.output, acc=acc_nums),
     output:
-        "results/pangraph.json.gz",
+        "results/pangraph.json",
     log:
         "logs/build_pangraph.log",
     threads: 8
@@ -20,7 +20,7 @@ rule build_pangraph:
 
 checkpoint block_stats:
     input:
-        graph="results/pangraph.json.gz",
+        graph=rules.build_pangraph.output,
     output:
         stats="results/pangraph_block_stats.csv",
     log:
@@ -35,7 +35,7 @@ checkpoint block_stats:
 
 checkpoint export_block_sequences:
     input:
-        "results/pangraph.json.gz",
+        rules.build_pangraph.output,
     output:
         directory("results/pangraph_block_sequences"),
     log:
@@ -83,19 +83,19 @@ rule align_all_core_blocks:
 
 rule core_block_alignment:
     input:
-        pangraph="results/pangraph.json.gz",
+        pangraph=rules.build_pangraph.output,
         alignments=core_block_alignments,
     output:
         alignment="results/core_genome_alignment.fa",
         coordinates="results/core_alignment_coordinates.csv",
-    params:
-        aln_folder="results/pangraph_core_block_alignments",
-        guide_strain=config["guide_strain"],
-        min_length=config["core_block_min_length"],
     log:
         "logs/core_block_alignment.log",
     conda:
         "../config/conda_envs/bioinfo.yaml"
+    params:
+        aln_folder="results/pangraph_core_block_alignments",
+        guide_strain=config["guide_strain"],
+        min_length=config["core_block_min_length"],
     shell:
         """
         python scripts/core_block_alignment.py \
