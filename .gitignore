@@ -7,3 +7,5 @@ __pycache__
 /playground
 /logs
 /justfile
+/notes/*.pdf
+/explore/figs

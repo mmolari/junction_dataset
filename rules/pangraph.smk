@@ -81,8 +81,37 @@ rule align_all_core_blocks:
         core_block_alignments,
 
 
+rule core_block_alignment:
+    input:
+        pangraph="results/pangraph.json.gz",
+        alignments=core_block_alignments,
+    output:
+        alignment="results/core_genome_alignment.fa",
+        coordinates="results/core_alignment_coordinates.csv",
+    params:
+        aln_folder="results/pangraph_core_block_alignments",
+        guide_strain=config["guide_strain"],
+        min_length=config["core_block_min_length"],
+    log:
+        "logs/core_block_alignment.log",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python scripts/core_block_alignment.py \
+            --pangraph {input.pangraph} \
+            --aln_folder {params.aln_folder} \
+            --guide_strain {params.guide_strain} \
+            --min_length {params.min_length} \
+            --out_alignment {output.alignment} \
+            --out_coordinates {output.coordinates} \
+            &> {log}
+        """
+
+
 rule pangraph_all:
     input:
         rules.export_block_sequences.output,
         rules.block_stats.output,
         rules.align_all_core_blocks.input,
+        rules.core_block_alignment.output,
