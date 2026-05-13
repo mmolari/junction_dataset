@@ -1,10 +1,7 @@
 import argparse
 import pathlib
-
 import pandas as pd
-
 import pypangraph as pp
-
 from Bio import AlignIO, Seq, SeqIO, SeqRecord
 
 
