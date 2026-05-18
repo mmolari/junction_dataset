@@ -1,0 +1,10 @@
+name: junctions-dev
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - biopython
+  - numpy
+  - pandas
+  - pytest

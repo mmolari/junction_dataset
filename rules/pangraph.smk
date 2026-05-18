@@ -113,6 +113,31 @@ rule core_block_alignment:
         """
 
 
+rule filter_core_alignment:
+    input:
+        alignment="results/core_genome_alignment/ungapped.fa",
+    output:
+        alignment="results/recombination_filter/alignment.fa",
+        intervals="results/recombination_filter/masked_intervals.csv",
+    log:
+        "logs/filter_core_alignment.log",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    params:
+        window=config["recomb_filter_window"],
+        max_snps=config["recomb_filter_max_snps"],
+    shell:
+        """
+        python scripts/recombination_filter.py \
+            --alignment {input.alignment} \
+            --window {params.window} \
+            --max_snps {params.max_snps} \
+            --out_alignment {output.alignment} \
+            --out_intervals {output.intervals} \
+            &> {log}
+        """
+
+
 rule run_gubbins:
     input:
         alignment="results/core_genome_alignment/ungapped.fa",
@@ -147,3 +172,4 @@ rule pangraph_all:
         rules.align_all_core_blocks.input,
         expand(rules.core_block_alignment.output, gapstatus=["gapped", "ungapped"]),
         rules.run_gubbins.output.tree,
+        rules.filter_core_alignment.output,
