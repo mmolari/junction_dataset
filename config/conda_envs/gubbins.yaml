@@ -4,3 +4,4 @@ channels:
   - conda-forge
 dependencies:
   - gubbins=3.4.1
+  - setuptools<81
