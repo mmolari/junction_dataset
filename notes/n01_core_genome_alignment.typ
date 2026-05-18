@@ -1,3 +1,6 @@
+#import "@preview/cheq:0.3.1": checklist
+#show: checklist
+
 #show link: underline
 #show link: set text(fill: blue)
 #set table(stroke: none, align: left)
@@ -56,5 +59,19 @@ I then take all columns that contain a gap in the alignment, and compute the gap
 #figure(image("assets/n01/interior_gap_frequency_ecdf.png", width: 70%), caption: [
   Cumulative distribution of gap frequencies across all columns of core-block alignments (flanking gap regions have been excluded). We observe an excess of columns with low-gap frequencies (60% vs 40%) suggesting an excess of recent "small" deletions.
 ]) <gap_freq>
+
+== Gubbins tree vs original tree
+
+I also tried removing recombination by feeding the ungapped core genome alignment to Gubbins. The resulting tree is largely concordant with the original tree from @molari2025quantifying, see @fig_treeknit.
+
+Some things still to be checked:
+- [ ] scatter-plot leaf-to-leaf distances in the two trees. Check if there are any outliers, or if the distances are generally concordant. This also will require rescaling n. substitutions vs alignment length.
+- [ ] re-implement a more plain version of our alignment filtering algorithm, and reconstruct the tree with that.
+- [ ] check if the highly-mutated regions coincide.
+- [ ] also polish the trees with `treetime` on the (recombination-filtered) alignment.
+
+#figure(image("assets/n01/treeknit.png", width: 80%), caption: [
+  Tanglegram of the Gubbins tree (left) vs the original reccombination-filtered tree from @molari2025quantifying (right). The two trees are largely concordant.
+]) <fig_treeknit>
 
 #bibliography("bibliography.bib")
