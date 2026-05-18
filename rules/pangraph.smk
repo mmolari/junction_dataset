@@ -86,16 +86,19 @@ rule core_block_alignment:
         pangraph=rules.build_pangraph.output,
         alignments=core_block_alignments,
     output:
-        alignment="results/core_genome_alignment.fa",
-        coordinates="results/core_alignment_coordinates.csv",
+        alignment="results/core_genome_alignment_{gapstatus}.fa",
+        coordinates="results/core_alignment_coordinates_{gapstatus}.csv",
     log:
-        "logs/core_block_alignment.log",
+        "logs/core_block_alignment_{gapstatus}.log",
+    wildcard_constraints:
+        gapstatus="gapped|ungapped",
     conda:
         "../config/conda_envs/bioinfo.yaml"
     params:
         aln_folder="results/pangraph_core_block_alignments",
         guide_strain=config["guide_strain"],
         min_length=config["core_block_min_length"],
+        ungapped_flag=lambda w: "--ungapped" if w.gapstatus == "ungapped" else "",
     shell:
         """
         python scripts/core_block_alignment.py \
@@ -105,6 +108,7 @@ rule core_block_alignment:
             --min_length {params.min_length} \
             --out_alignment {output.alignment} \
             --out_coordinates {output.coordinates} \
+            {params.ungapped_flag} \
             &> {log}
         """
 
@@ -114,4 +118,4 @@ rule pangraph_all:
         rules.export_block_sequences.output,
         rules.block_stats.output,
         rules.align_all_core_blocks.input,
-        rules.core_block_alignment.output,
+        expand(rules.core_block_alignment.output, gapstatus=["gapped", "ungapped"]),

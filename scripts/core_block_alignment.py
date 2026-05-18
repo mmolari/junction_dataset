@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import numpy as np
 import pandas as pd
 import pypangraph as pp
 from Bio import AlignIO, Seq, SeqIO, SeqRecord
@@ -33,6 +34,11 @@ def parse_args():
     )
     parser.add_argument("--out_alignment", type=str, required=True)
     parser.add_argument("--out_coordinates", type=str, required=True)
+    parser.add_argument(
+        "--ungapped",
+        action="store_true",
+        help="drop any column containing a gap from all strains",
+    )
     return parser.parse_args()
 
 
@@ -57,12 +63,13 @@ def anchor_block_order(pan, guide_strain, min_length):
     return order[mask].drop(columns="core").reset_index(drop=True)
 
 
-def block_alignment_by_strain(pan, block_id, aln_path, flip):
+def block_alignment_matrix(pan, block_id, aln_path, strains, flip):
     # The per-block FASTA is keyed by pangraph *node ids*, not strain
-    # names. Build the node->strain map for this block and rewrite the
-    # alignment keyed by strain. If the guide traverses the block in
-    # reverse, flip every sequence so the concatenation stays in guide
-    # orientation.
+    # names. Build the node->strain map for this block and re-key the
+    # alignment by strain. If the guide traverses the block in reverse,
+    # flip every sequence so the concatenation stays in guide
+    # orientation. Returns a (n_strains, aln_length) char matrix with
+    # rows ordered as `strains`.
     aln = AlignIO.read(aln_path, "fasta")
     path_id_to_name = {path.id: path.name for path in pan.paths}
     block = pan.blocks[block_id]
@@ -73,23 +80,27 @@ def block_alignment_by_strain(pan, block_id, aln_path, flip):
     seqs = {node_to_strain[rec.id]: str(rec.seq) for rec in aln}
     if flip:
         seqs = {s: str(Seq.Seq(v).reverse_complement()) for s, v in seqs.items()}
-    return seqs, aln.get_alignment_length()
+    return np.array([list(seqs[s]) for s in strains], dtype="U1")
 
 
-def concatenate_alignments(pan, anchor_order, aln_folder, strains):
-    # Stream each anchor block onto the growing per-strain sequences and
-    # record where it lands.
-    fragments = {s: [] for s in strains}
+def concatenate_alignments(pan, anchor_order, aln_folder, strains, ungapped):
+    # Materialise each anchor block as a char matrix, optionally drop
+    # any column with a gap, and concat horizontally. Coordinates track
+    # the post-strip width when `ungapped` is set.
+    mats = []
     coords = []
     cursor = 0
     for _, row in anchor_order.iterrows():
         block_id = row["block_id"]
         aln_path = aln_folder / f"block_{block_id}.fa"
-        seqs, aln_length = block_alignment_by_strain(
-            pan, block_id, aln_path, flip=not row["strand"]
+        mat = block_alignment_matrix(
+            pan, block_id, aln_path, strains, flip=not row["strand"]
         )
-        for s in strains:
-            fragments[s].append(seqs[s])
+        if ungapped:
+            keep = ~np.any(mat == "-", axis=0)
+            mat = mat[:, keep]
+        aln_length = mat.shape[1]
+        mats.append(mat)
         coords.append(
             {
                 "block_id": block_id,
@@ -101,7 +112,8 @@ def concatenate_alignments(pan, anchor_order, aln_folder, strains):
             }
         )
         cursor += aln_length
-    alignment = {s: "".join(parts) for s, parts in fragments.items()}
+    full = np.concatenate(mats, axis=1)
+    alignment = {strain: "".join(full[i]) for i, strain in enumerate(strains)}
     return alignment, pd.DataFrame(coords)
 
 
@@ -119,6 +131,8 @@ if __name__ == "__main__":
     strains = sorted(pan.strains())
     anchor_order = anchor_block_order(pan, args.guide_strain, args.min_length)
     aln_folder = pathlib.Path(args.aln_folder)
-    alignment, coords = concatenate_alignments(pan, anchor_order, aln_folder, strains)
+    alignment, coords = concatenate_alignments(
+        pan, anchor_order, aln_folder, strains, args.ungapped
+    )
     write_fasta(alignment, args.out_alignment)
     coords.to_csv(args.out_coordinates, index=False)
