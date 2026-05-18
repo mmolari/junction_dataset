@@ -113,9 +113,37 @@ rule core_block_alignment:
         """
 
 
+rule run_gubbins:
+    input:
+        alignment="results/core_genome_alignment/ungapped.fa",
+    output:
+        tree="results/gubbins/gubbins.final_tree.tre",
+        node_tree="results/gubbins/gubbins.node_labelled.final_tree.tre",
+        recombination_gff="results/gubbins/gubbins.recombination_predictions.gff",
+        branch_stats="results/gubbins/gubbins.per_branch_statistics.csv",
+        filtered_fasta="results/gubbins/gubbins.filtered_polymorphic_sites.fasta",
+    log:
+        "logs/run_gubbins.log",
+    threads: 8
+    conda:
+        "../config/conda_envs/gubbins.yaml"
+    params:
+        outdir="results/gubbins",
+        prefix="gubbins",
+    shell:
+        """
+        INPUT_ABS=$(realpath {input.alignment})
+        LOG_ABS=$(realpath -m {log})
+        mkdir -p {params.outdir}
+        cd {params.outdir}
+        run_gubbins.py --prefix {params.prefix} --threads {threads} "$INPUT_ABS" &> "$LOG_ABS"
+        """
+
+
 rule pangraph_all:
     input:
         rules.export_block_sequences.output,
         rules.block_stats.output,
         rules.align_all_core_blocks.input,
         expand(rules.core_block_alignment.output, gapstatus=["gapped", "ungapped"]),
+        rules.run_gubbins.output.tree,
