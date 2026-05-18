@@ -86,8 +86,8 @@ rule core_block_alignment:
         pangraph=rules.build_pangraph.output,
         alignments=core_block_alignments,
     output:
-        alignment="results/core_genome_alignment_{gapstatus}.fa",
-        coordinates="results/core_alignment_coordinates_{gapstatus}.csv",
+        alignment="results/core_genome_alignment/{gapstatus}.fa",
+        coordinates="results/core_genome_alignment/{gapstatus}_coords.csv",
     log:
         "logs/core_block_alignment_{gapstatus}.log",
     wildcard_constraints:
