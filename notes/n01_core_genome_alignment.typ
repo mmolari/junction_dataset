@@ -29,6 +29,8 @@ For all the remaining _anchor blocks_ (i.e. core-blocks with length $>= 500$ bp)
 
 I then concatenate all the core-block alignments in the order (and strandedness) of the guide strain (isolate `NZ_CP096110.1`, the same used in @molari2025quantifying), keeping track of the block boundaries. Note that this alignment also includes all gaps.
 
+I also create an ungapped version of the core genome alignment, where any column containing a gap in any isolate is removed. This alignment has final size of 3.56 Mbp.
+
 == Diversity along the alignment
 
 As done for @molari2025quantifying, I compute the density of polymorphic sites along the core genome alignment using 10kb windows, see @snp_density_10kb. This confirms the background density of 10 polymorphic sites per 10kb window.

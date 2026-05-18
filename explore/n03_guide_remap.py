@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from Bio import SeqIO
 
 GUIDE = "NZ_CP096110.1"
-ALN_PATH = pathlib.Path("../results/core_genome_alignment.fa")
+ALN_PATH = pathlib.Path("../results/core_genome_alignment/gapped.fa")
 GENOME_PATH = pathlib.Path(f"../data/fasta/{GUIDE}.fa")
 
 fig_fld = pathlib.Path("figs/n03_guide_remap")

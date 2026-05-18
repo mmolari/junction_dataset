@@ -57,7 +57,7 @@ plt.show()
 # %%
 
 
-aln_path = "../results/core_genome_alignment.fa"
+aln_path = "../results/core_genome_alignment/gapped.fa"
 tree_path = "../config/polished_tree.nwk"
 
 # %%
