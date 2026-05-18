@@ -165,6 +165,21 @@ rule run_gubbins:
         """
 
 
+rule build_filtered_coretree:
+    input:
+        alignment=rules.filter_core_alignment.output.alignment,
+    output:
+        tree="results/recombination_filter/fasttree.nwk",
+    log:
+        "logs/build_filtered_coretree.log",
+    conda:
+        "../config/conda_envs/fasttree.yaml"
+    shell:
+        """
+        fasttree -gtr -nt {input.alignment} > {output.tree} 2> {log}
+        """
+
+
 rule pangraph_all:
     input:
         rules.export_block_sequences.output,
@@ -173,3 +188,4 @@ rule pangraph_all:
         expand(rules.core_block_alignment.output, gapstatus=["gapped", "ungapped"]),
         rules.run_gubbins.output.tree,
         rules.filter_core_alignment.output,
+        rules.build_filtered_coretree.output.tree,

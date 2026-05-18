@@ -25,3 +25,6 @@ set-resources:
     cpus_per_task: 8
     runtime: 180m
     qos: "6hours"
+  build_filtered_coretree:
+    runtime: 180m
+    qos: "6hours"
