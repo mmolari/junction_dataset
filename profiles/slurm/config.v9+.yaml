@@ -26,5 +26,6 @@ set-resources:
     runtime: 180m
     qos: "6hours"
   build_filtered_coretree:
-    runtime: 180m
+    mem_mb: 40000
+    runtime: 350m
     qos: "6hours"
