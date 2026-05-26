@@ -2,6 +2,19 @@
 # extract a core-genome alignment and build a phylogenetic tree
 
 
+def _fasta_aln_length(path):
+    """Length of the first sequence in a FASTA file (alignment width)."""
+    length = 0
+    with open(path) as f:
+        for line in f:
+            if line.startswith(">"):
+                if length > 0:
+                    return length
+            else:
+                length += len(line.strip())
+    return length
+
+
 rule build_pangraph:
     input:
         expand(rules.gbk_to_fa.output, acc=acc_nums),
@@ -14,7 +27,7 @@ rule build_pangraph:
         opt="--circular -k minimap2 -s 20 -a 100 -b 5 -l 100",
     shell:
         """
-        pangraph build {input} {params.opt} -j {threads} -o {output} -v &> {log}
+        pangraph build {input} {params.opt} -j {threads} -o {output} -v &>{log}
         """
 
 
@@ -29,7 +42,7 @@ checkpoint block_stats:
         "../config/conda_envs/bioinfo.yaml"
     shell:
         """
-        python -c "import pypangraph as pp; pan = pp.Pangraph.from_json('{input.graph}'); bdf = pan.to_blockstats_df(); bdf.to_csv('{output.stats}', index_label='id')" &> {log}
+        python -c "import pypangraph as pp; pan = pp.Pangraph.from_json('{input.graph}'); bdf = pan.to_blockstats_df(); bdf.to_csv('{output.stats}', index_label='id')" &>{log}
         """
 
 
@@ -42,7 +55,7 @@ checkpoint export_block_sequences:
         "logs/export_block_sequences.log",
     shell:
         """
-        pangraph export block-sequences {input} -o {output} --unaligned -v &> {log}
+        pangraph export block-sequences {input} -o {output} --unaligned -v &>{log}
         """
 
 
@@ -57,7 +70,7 @@ rule align_core_block:
         "../config/conda_envs/mafft.yaml"
     shell:
         """
-        mafft --auto {input} > {output} 2> {log}
+        mafft --auto {input} >{output} 2>{log}
         """
 
 
@@ -109,7 +122,7 @@ rule core_block_alignment:
             --out_alignment {output.alignment} \
             --out_coordinates {output.coordinates} \
             {params.ungapped_flag} \
-            &> {log}
+            &>{log}
         """
 
 
@@ -134,13 +147,15 @@ rule filter_core_alignment:
             --max_snps {params.max_snps} \
             --out_alignment {output.alignment} \
             --out_intervals {output.intervals} \
-            &> {log}
+            &>{log}
         """
 
 
 rule run_gubbins:
     input:
-        alignment="results/core_genome_alignment/ungapped.fa",
+        alignment=expand(
+            rules.core_block_alignment.output.alignment, gapstatus="ungapped"
+        ),
     output:
         tree="results/gubbins/gubbins.final_tree.tre",
         node_tree="results/gubbins/gubbins.node_labelled.final_tree.tre",
@@ -149,9 +164,9 @@ rule run_gubbins:
         filtered_fasta="results/gubbins/gubbins.filtered_polymorphic_sites.fasta",
     log:
         "logs/run_gubbins.log",
-    threads: 8
     conda:
         "../config/conda_envs/gubbins.yaml"
+    threads: 8
     params:
         outdir="results/gubbins",
         prefix="gubbins",
@@ -161,7 +176,7 @@ rule run_gubbins:
         LOG_ABS=$(realpath -m {log})
         mkdir -p {params.outdir}
         cd {params.outdir}
-        run_gubbins.py --prefix {params.prefix} --threads {threads} "$INPUT_ABS" &> "$LOG_ABS"
+        run_gubbins.py --prefix {params.prefix} --threads {threads} "$INPUT_ABS" &>"$LOG_ABS"
         """
 
 
@@ -176,7 +191,27 @@ rule build_filtered_coretree:
         "../config/conda_envs/fasttree.yaml"
     shell:
         """
-        fasttree -gtr -nt {input.alignment} > {output.tree} 2> {log}
+        fasttree -gtr -nt {input.alignment} >{output.tree} 2>{log}
+        """
+
+
+rule refine_filtered_coretree:
+    input:
+        tree=rules.build_filtered_coretree.output.tree,
+        alignment=rules.filter_core_alignment.output.alignment,
+    output:
+        tree="results/core_trees/polished_from_filtering.nwk",
+    log:
+        "logs/refine_filtered_coretree.log",
+    conda:
+        "../config/conda_envs/treetime.yaml"
+    shell:
+        """
+        python scripts/refine_tree.py \
+            --tree_in {input.tree} \
+            --aln {input.alignment} \
+            --tree_out {output.tree} \
+            &>{log}
         """
 
 
@@ -189,3 +224,5 @@ rule pangraph_all:
         rules.run_gubbins.output.tree,
         rules.filter_core_alignment.output,
         rules.build_filtered_coretree.output.tree,
+        rules.refine_filtered_coretree.output.tree,
+        rules.refine_gubbins_coretree.output.tree,
