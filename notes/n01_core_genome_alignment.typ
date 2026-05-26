@@ -66,9 +66,13 @@ I also tried removing recombination by feeding the ungapped core genome alignmen
 
 Some things still to be checked:
 - [ ] scatter-plot leaf-to-leaf distances in the two trees. Check if there are any outliers, or if the distances are generally concordant. This also will require rescaling n. substitutions vs alignment length.
-- [ ] re-implement a more plain version of our alignment filtering algorithm, and reconstruct the tree with that.
+- [x] re-implement a more plain version of our alignment filtering algorithm, and reconstruct the tree with that.
+  - [x] compare filtered and unfiltered alignment with barplot of mutations, and amount of masked regions.
+  - [ ] Use fasttree to build the alignment
+  - [ ] polish with `treetime`, see `https://github.com/mmolari/ecoliST131-structural-evo/blob/main/scripts/pangraph/refine_coretree_treetime.py`.
 - [ ] check if the highly-mutated regions coincide.
 - [ ] also polish the trees with `treetime` on the (recombination-filtered) alignment.
+- [ ] compare all the three trees (original, Gubbins, and our filtering) with a tanglegram (for topolgy) and scatter-plot of leaf-to-leaf distances (for branch lengths).
 
 #figure(image("assets/n01/treeknit.png", width: 80%), caption: [
   Tanglegram of the Gubbins tree (left) vs the original reccombination-filtered tree from @molari2025quantifying (right). The two trees are largely concordant.
