@@ -225,4 +225,3 @@ rule pangraph_all:
         rules.filter_core_alignment.output,
         rules.build_filtered_coretree.output.tree,
         rules.refine_filtered_coretree.output.tree,
-        rules.refine_gubbins_coretree.output.tree,
