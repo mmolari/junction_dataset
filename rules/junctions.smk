@@ -10,7 +10,7 @@ checkpoint junction_positions:
     log:
         "logs/junction_positions.log",
     conda:
-        "config/conda_envs/bioinfo.yaml"
+        "../config/conda_envs/bioinfo.yaml"
     params:
         min_length=config["core_block_min_length"],
     shell:
@@ -46,7 +46,7 @@ rule extract_junction_sequences:
     log:
         "logs/extract_junctions/{junc}.log",
     conda:
-        "config/conda_envs/bioinfo.yaml"
+        "../config/conda_envs/bioinfo.yaml"
     shell:
         """
         python scripts/extract_junctions.py \
@@ -78,7 +78,7 @@ rule junction_stats:
     output:
         "results/junction_stats.csv",
     conda:
-        "config/conda_envs/bioinfo.yaml"
+        "../config/conda_envs/bioinfo.yaml"
     shell:
         """
         python scripts/junction_stats.py \
