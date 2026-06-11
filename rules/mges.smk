@@ -74,6 +74,7 @@ rule defensefinder_find:
         defense-finder run \
             -o {output.a} \
             --models-dir {input.mod} \
+            --skip-model-version-check \
             {input.fa}
         """
 
@@ -91,8 +92,7 @@ rule defensefinder_gene_location:
         python3 scripts/annotations/defensefinder_gene_location.py \
             --input_gene_df {input.g} \
             --proteins {input.p} \
-            --output_gene_df {output} \
-            --skip-model-version-check
+            --output_gene_df {output}
         """
 
 
