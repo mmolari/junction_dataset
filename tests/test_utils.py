@@ -36,6 +36,13 @@ def test_index_single_junction(tmp_path):
     assert set(one) == {"isoA", "isoB"}
 
 
+def test_edge_filter_materialises_only_that_junction(tmp_path):
+    # passing edge= keeps the nested shape but only the requested junction's rows
+    d = load_junction_positions(_write(tmp_path), edge="e1")
+    assert set(d) == {"e1"}
+    assert d["e1"]["isoA"] == (100, 200, 300, 400, True)
+
+
 def test_non_bool_strand_rejected(tmp_path):
     # a stray strand value makes pandas read the column as object, not bool;
     # bool("anything-nonempty") is True, so guard against the silent flip.

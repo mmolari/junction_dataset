@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     gbk_fld = pathlib.Path(args.gbk_fld)
     junct_id = args.junc_id
-    j_pos = ut.load_junction_positions(args.junc_pos_file)[junct_id]
+    j_pos = ut.load_junction_positions(args.junc_pos_file, edge=junct_id)[junct_id]
 
     records = []
     annotations = []
