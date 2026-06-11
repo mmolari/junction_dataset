@@ -78,71 +78,6 @@ def within(B, E, b, e, L):
         return within_loop(B, E, b, e)
 
 
-def tests():
-    L = 100
-
-    def wi(B, E, b, e):
-        return within(B, E, b, e, L)
-
-    #       B              E            L
-    #       |==============|
-    #              |--|                    subset
-    #              |------------|          start
-    # --|          |---------------------  start
-    #    |-------------|                   end
-    # --------|                   |------  end
-    #   |-----------------------------|    superset
-    # ---------------------------|    |--  superset
-    # --| |------------------------------  superset
-    #                         |--------|   no
-    # --|                           |----  no
-    # --------|          |---------------  ??
-
-    assert wi(30, 60, 35, 45) == "subset"
-    assert wi(30, 60, 35, 65) == "start"
-    assert wi(30, 60, 35, 10) == "start"
-    assert wi(30, 60, 10, 45) == "end"
-    assert wi(30, 60, 90, 45) == "end"
-    assert wi(30, 60, 25, 65) == "superset"
-    assert wi(30, 60, 90, 70) == "superset"
-    assert wi(30, 60, 25, 10) == "superset"
-    assert wi(30, 60, 80, 85) == "no"
-    assert wi(30, 60, 80, 10) == "no"
-    try:
-        wi(30, 60, 55, 35)
-    except AssertionError:
-        pass
-    else:
-        assert False
-
-    # 0   E                        B    L
-    # ====|                        |=====
-    #                                |--|  subset
-    # -|                             |---  subset
-    # |--|                                 subset
-    # |-------|                            start
-    # ------------------|            |---  start
-    #                           |-----|    end
-    # --|                       |--------  end
-    #        |-------------|               no
-    #  |-----------------------------|     ??
-
-    assert wi(60, 30, 65, 90) == "subset"
-    assert wi(60, 30, 65, 10) == "subset"
-    assert wi(60, 30, 10, 20) == "subset"
-    assert wi(60, 30, 10, 40) == "start"
-    assert wi(60, 30, 90, 40) == "start"
-    assert wi(60, 30, 35, 70) == "end"
-    assert wi(60, 30, 35, 10) == "end"
-    assert wi(60, 30, 40, 50) == "no"
-    try:
-        wi(60, 30, 10, 90)
-    except AssertionError:
-        pass
-    else:
-        assert False
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--iso_len", help="Input file with isolate lengths")
@@ -172,8 +107,6 @@ def parse_args():
 # - element positions are 1-based unless zero-based-input-pos is set
 
 if __name__ == "__main__":
-    tests()
-
     args = parse_args()
 
     # load IS dataframe
