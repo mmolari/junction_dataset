@@ -91,7 +91,8 @@ rule defensefinder_gene_location:
         python3 scripts/annotations/defensefinder_gene_location.py \
             --input_gene_df {input.g} \
             --proteins {input.p} \
-            --output_gene_df {output}
+            --output_gene_df {output} \
+            --skip-model-version-check
         """
 
 
