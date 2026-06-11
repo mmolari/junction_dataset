@@ -10,6 +10,12 @@ def load_junction_positions(csv_file):
     Callers wanting a single junction index the result by its edge id.
     """
     df = pd.read_csv(csv_file)
+    # strand must round-trip as a real bool: pandas only infers bool dtype for a
+    # pure True/False column, so an object dtype here means a stray value slipped
+    # in and bool("False") would be True -- a silent orientation flip.
+    assert df["strand"].dtype == bool, (
+        f"'strand' column is {df['strand'].dtype}, expected bool"
+    )
     positions = {}
     for _, row in df.iterrows():
         positions.setdefault(row["edge"], {})[row["iso"]] = (

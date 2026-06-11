@@ -1,3 +1,5 @@
+import pytest
+
 from utils import load_junction_positions
 
 # Two edges, three rows; covers strand bool parsing and the nested {edge: {iso}} shape.
@@ -32,3 +34,13 @@ def test_index_single_junction(tmp_path):
     # the pattern extract_junctions uses: index the nested dict by edge id
     one = load_junction_positions(_write(tmp_path))["e1"]
     assert set(one) == {"isoA", "isoB"}
+
+
+def test_non_bool_strand_rejected(tmp_path):
+    # a stray strand value makes pandas read the column as object, not bool;
+    # bool("anything-nonempty") is True, so guard against the silent flip.
+    bad = "edge,iso,left_start,left_end,right_start,right_end,strand\ne1,isoA,1,2,3,4,fwd\n"
+    p = tmp_path / "bad.csv"
+    p.write_text(bad)
+    with pytest.raises(AssertionError):
+        load_junction_positions(str(p))
