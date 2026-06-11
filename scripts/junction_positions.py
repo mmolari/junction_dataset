@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument(
         "--min_length",
         type=int,
-        default=500,
+        required=True,
         help="Minimum block length to be considered backbone (L_thr).",
     )
     parser.add_argument(
