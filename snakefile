@@ -96,7 +96,7 @@ include: "rules/mges.smk"
 
 rule all:
     input:
-        expand(rules.build_junction_pangraph.output, junc=junc_ids),
+        junction_pangraphs,
         rules.genome_lengths.output,
         all_plasmid_outputs,
         rules.junction_stats.output,

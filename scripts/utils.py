@@ -1,5 +1,25 @@
 from Bio import SeqIO
 from Bio.Seq import Seq
+import pandas as pd
+
+
+def load_junction_positions(csv_file):
+    """Load the junction-positions CSV into a nested dict.
+
+    Returns {edge: {iso: (left_start, left_end, right_start, right_end, strand)}}.
+    Callers wanting a single junction index the result by its edge id.
+    """
+    df = pd.read_csv(csv_file)
+    positions = {}
+    for _, row in df.iterrows():
+        positions.setdefault(row["edge"], {})[row["iso"]] = (
+            row["left_start"],
+            row["left_end"],
+            row["right_start"],
+            row["right_end"],
+            bool(row["strand"]),
+        )
+    return positions
 
 
 def reverse_complement(sequence):

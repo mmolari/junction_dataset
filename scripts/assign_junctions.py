@@ -1,7 +1,7 @@
-import json
 import pandas as pd
 import numpy as np
 import argparse
+import utils as ut
 
 #       B                        E
 #       |------------------------|
@@ -147,7 +147,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--iso_len", help="Input file with isolate lengths")
     parser.add_argument(
-        "--junction_pos_json", help="Input file with junction positions"
+        "--junction_pos_csv", help="Input CSV file with junction positions"
     )
     parser.add_argument("--element_pos_df", help="Input file with element positions")
     parser.add_argument(
@@ -179,9 +179,8 @@ if __name__ == "__main__":
     # load IS dataframe
     df_element = pd.read_csv(args.element_pos_df, index_col=0)
 
-    # load joint coordinates dictionary
-    with open(args.junction_pos_json) as f:
-        junction_positions = json.load(f)
+    # load joint coordinates: {edge: {iso: (left_start, left_end, right_start, right_end, strand)}}
+    junction_positions = ut.load_junction_positions(args.junction_pos_csv)
 
     # isolates genome length
     iso_L = pd.read_csv(args.iso_len, index_col=0)["length"].to_dict()

@@ -25,7 +25,7 @@ rule genomad_run:
         genomad end-to-end {input.fa} {output.d} {input.db} \
             --cleanup \
             --threads 4 \
-            &> {log}
+            &>{log}
         """
 
 
@@ -115,7 +115,7 @@ rule defensefinder_preformat:
 rule mge_assign_positions:
     input:
         el="results/mges/{tool}.csv",
-        j_pos=config["junction_positions_file"],
+        j_pos=rules.junction_positions.output.csv,
         iso_len=rules.genome_lengths.output,
     output:
         "results/mges_to_junctions/{tool}.csv",
@@ -128,7 +128,7 @@ rule mge_assign_positions:
         """
         python3 scripts/assign_junctions.py \
             --iso_len {input.iso_len} \
-            --junction_pos_json {input.j_pos} \
+            --junction_pos_csv {input.j_pos} \
             --element_pos_df {input.el} \
             --output_pos {output} \
             {params.zero_based} \
