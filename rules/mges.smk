@@ -38,7 +38,7 @@ rule genomad_preformat:
         "../config/conda_envs/bioinfo.yaml"
     shell:
         """
-        python3 scripts/genomad_df_preformat.py \
+        python3 scripts/annotations/genomad_df_preformat.py \
             --input_tsvs {input} \
             --output_df {output}
         """
