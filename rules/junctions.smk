@@ -23,13 +23,20 @@ checkpoint junction_positions:
         """
 
 
-def junction_ids(wildcards):
-    # junction IDs are derived dynamically from the pangraph; keep only junctions
-    # present in more than one isolate (single-isolate junctions are degenerate).
+@functools.lru_cache
+def _multi_isolate_junctions():
+    # cached so the checkpoint CSV is parsed once, not on every input-function call
+    # (junction_ids is pulled by both rule all and junction_stats).
     csv = checkpoints.junction_positions.get().output.csv
     df = pd.read_csv(csv)
     counts = df.groupby("edge")["iso"].nunique()
-    return counts.index[counts > 1].tolist()
+    return tuple(counts.index[counts > 1])
+
+
+def junction_ids(wildcards):
+    # junction IDs are derived dynamically from the pangraph; keep only junctions
+    # present in more than one isolate (single-isolate junctions are degenerate).
+    return list(_multi_isolate_junctions())
 
 
 def junction_pangraphs(wildcards):
