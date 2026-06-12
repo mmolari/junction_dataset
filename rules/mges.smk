@@ -25,7 +25,7 @@ rule genomad_run:
         genomad end-to-end {input.fa} {output.d} {input.db} \
             --cleanup \
             --threads 4 \
-            &> {log}
+            &>{log}
         """
 
 
@@ -38,7 +38,7 @@ rule genomad_preformat:
         "../config/conda_envs/bioinfo.yaml"
     shell:
         """
-        python3 scripts/genomad_df_preformat.py \
+        python3 scripts/annotations/genomad_df_preformat.py \
             --input_tsvs {input} \
             --output_df {output}
         """
@@ -74,6 +74,7 @@ rule defensefinder_find:
         defense-finder run \
             -o {output.a} \
             --models-dir {input.mod} \
+            --skip-model-version-check \
             {input.fa}
         """
 
@@ -112,23 +113,59 @@ rule defensefinder_preformat:
         """
 
 
+rule ISEScan_run:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+    output:
+        d=directory("data/ISEScan/{acc}"),
+        s="data/ISEScan/{acc}/fasta/{acc}.fa.tsv",
+    log:
+        "logs/ISEScan/{acc}.log",
+    conda:
+        "../config/conda_envs/isescan.yaml"
+    threads: 4
+    shell:
+        """
+        isescan.py --seqfile {input.fa} --output {output.d} --nthread {threads} &>{log}
+        """
+
+
+rule ISEScan_preformat:
+    input:
+        lambda w: expand(rules.ISEScan_run.output.s, acc=acc_nums),
+    output:
+        "results/mges/ISEScan.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/IS_df_preformat.py \
+            --input_tsvs {input} \
+            --output_df {output}
+        """
+
+
+# whether each tool reports element coordinates 0-based; ISEScan is 1-based
+ZERO_BASED = {"genomad": True, "defensefinder": True, "ISEScan": False}
+
+
 rule mge_assign_positions:
     input:
         el="results/mges/{tool}.csv",
-        j_pos=config["junction_positions_file"],
+        j_pos=rules.junction_positions.output.csv,
         iso_len=rules.genome_lengths.output,
     output:
         "results/mges_to_junctions/{tool}.csv",
     conda:
         "../config/conda_envs/bioinfo.yaml"
     params:
-        zero_based="--zero_based",
+        zero_based=lambda w: "--zero_based" if ZERO_BASED[w.tool] else "",
         random="",
     shell:
         """
         python3 scripts/assign_junctions.py \
             --iso_len {input.iso_len} \
-            --junction_pos_json {input.j_pos} \
+            --junction_pos_csv {input.j_pos} \
             --element_pos_df {input.el} \
             --output_pos {output} \
             {params.zero_based} \
@@ -138,4 +175,7 @@ rule mge_assign_positions:
 
 rule mges_all:
     input:
-        expand(rules.mge_assign_positions.output, tool=["genomad", "defensefinder"]),
+        expand(
+            rules.mge_assign_positions.output,
+            tool=["genomad", "defensefinder", "ISEScan"],
+        ),

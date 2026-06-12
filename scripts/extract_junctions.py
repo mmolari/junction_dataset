@@ -1,7 +1,5 @@
 from Bio import SeqIO
 from Bio.Seq import Seq
-import pandas as pd
-import json
 import pathlib
 import utils as ut
 import argparse
@@ -21,7 +19,7 @@ def parse_args():
         "--junc-pos-file",
         type=str,
         required=True,
-        help="JSON file with junction positions.",
+        help="CSV file with junction positions.",
     )
     parser.add_argument(
         "--out-fa",
@@ -38,23 +36,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_junction_positions(json_file):
-    with open(json_file, "r") as f:
-        data = json.load(f)
-    return data
-
-
 if __name__ == "__main__":
     args = parse_args()
 
-    j_pos = load_junction_positions(args.junc_pos_file)
     gbk_fld = pathlib.Path(args.gbk_fld)
     junct_id = args.junc_id
+    j_pos = ut.load_junction_positions(args.junc_pos_file, edge=junct_id)[junct_id]
 
     records = []
     annotations = []
     region_lengths = {}
-    for iso, positions in j_pos[junct_id].items():
+    for iso, positions in j_pos.items():
         gbk_file = gbk_fld / f"{iso}.gbk"
         print(f"Processing {gbk_file}...")
         start, _, _, end, strand = positions

@@ -1,3 +1,6 @@
 acc_nums_file: "config/acc_nums.txt"
-junction_positions_file: "config/junction_positions.json"
 plasmids_file: "config/plasmids.json"
+core_block_min_length: 500
+guide_strain: "NZ_CP096110.1"
+recomb_filter_window: 1000
+recomb_filter_max_snps: 3

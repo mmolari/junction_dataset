@@ -1,0 +1,35 @@
+jobs: 15
+cores: 1
+local-cores: 1
+use-conda: true
+executor: "slurm"
+latency-wait: 30
+resources:
+  ncbi: 2
+default-resources:
+  mem_mb: 16000
+  runtime: 29m
+  qos: "30min"
+set-resources:
+  genomad_run:
+    mem_mb: 60000
+    cpus_per_task: 4
+  ISEScan_run:
+    cpus_per_task: 4
+    runtime: 180m
+    qos: "6hours"
+  build_pangraph:
+    cpus_per_task: 8
+    runtime: 350m
+    qos: "6hours"
+  align_core_block:
+    runtime: 350m
+    qos: "6hours"
+  run_gubbins:
+    cpus_per_task: 8
+    runtime: 180m
+    qos: "6hours"
+  build_filtered_coretree:
+    mem_mb: 40000
+    runtime: 350m
+    qos: "6hours"

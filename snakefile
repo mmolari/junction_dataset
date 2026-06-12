@@ -1,5 +1,7 @@
 import pandas as pd
 import json
+import functools
+from pathlib import Path
 
 
 configfile: "config/config.yaml"
@@ -8,17 +10,16 @@ configfile: "config/config.yaml"
 # load the list of accession numbers
 acc_nums = pd.read_csv(config["acc_nums_file"], header=None)[0].tolist()
 print(f"N. isolates: {len(acc_nums)}")
-# load the table of junction positions
-with open(config["junction_positions_file"]) as f:
-    junc_pos = json.load(f)
-# exclude single-isolate junctions
-junc_pos = {j: p for j, p in junc_pos.items() if len(p) > 1}
-# list of junction IDs
-junc_ids = list(junc_pos.keys())
-print(f"N. junctions: {len(junc_ids)}")
 # list of plasmids
 with open(config["plasmids_file"]) as f:
     plasmids = json.load(f)
+
+# optional NCBI API key (gitignored). Raises efetch rate limit from 3 to 10 req/s.
+ncbi_api_key_file = Path("config/ncbi_api_key.txt")
+NCBI_API_KEY = (
+    ncbi_api_key_file.read_text().strip() if ncbi_api_key_file.exists() else ""
+)
+# seconds to sleep after each NCBI download to stay under rate limits
 
 
 wildcard_constraints:
@@ -30,11 +31,16 @@ wildcard_constraints:
 rule download_gbk:
     output:
         "data/gbk/{acc}.gbk",
+    retries: 3
     conda:
-        "config/conda_envs/entrez_direct.yaml"
+        "config/conda_envs/ncbi_acc_download.yaml"
+    resources:
+        ncbi=1,
+    params:
+        api_key_arg=(f"--api-key {NCBI_API_KEY}" if NCBI_API_KEY else ""),
     shell:
         """
-        efetch -db nucleotide -id {wildcards.acc} -format gbwithparts > {output}
+        ncbi-acc-download --out {output} {params.api_key_arg} {wildcards.acc}
         """
 
 
@@ -48,57 +54,6 @@ rule gbk_to_fa:
     shell:
         """
         python3 scripts/gbk_to_fa.py --gbk {input.gbk} --fa {output.fa}
-        """
-
-
-rule extract_junction_sequences:
-    input:
-        gbk=expand(rules.download_gbk.output, acc=acc_nums),
-        j_pos=config["junction_positions_file"],
-    output:
-        fa="results/junction_sequences/{junc}.fa",
-        gff="results/junction_annotations/{junc}.gff",
-    conda:
-        "config/conda_envs/bioinfo.yaml"
-    log:
-        "logs/extract_junctions/{junc}.log",
-    shell:
-        """
-        python scripts/extract_junctions.py \
-            --gbk-fld "data/gbk" \
-            --junc-id {wildcards.junc} \
-            --junc-pos-file {input.j_pos} \
-            --out-fa {output.fa} \
-            --out-ann {output.gff} \
-            &> {log}
-        """
-
-
-rule build_junction_pangraph:
-    input:
-        fa=rules.extract_junction_sequences.output.fa,
-    output:
-        "results/junction_pangraphs/{junc}.json",
-    params:
-        opt="-s 20 -a 100 -b 5 -l 100",
-    shell:
-        """
-        pangraph build {input.fa} {params.opt} -o {output}
-        """
-
-
-rule junction_stats:
-    input:
-        pangraph=expand(rules.build_junction_pangraph.output, junc=junc_ids),
-    output:
-        "results/junction_stats.csv",
-    conda:
-        "config/conda_envs/bioinfo.yaml"
-    shell:
-        """
-        python scripts/junction_stats.py \
-            --junct_pangraphs {input.pangraph} \
-            --df_csv {output}
         """
 
 
@@ -135,12 +90,14 @@ def all_plasmid_outputs(wildcards):
     return outs
 
 
+include: "rules/pangraph.smk"
+include: "rules/junctions.smk"
 include: "rules/mges.smk"
 
 
 rule all:
     input:
-        expand(rules.build_junction_pangraph.output, junc=junc_ids),
+        junction_pangraphs,
         rules.genome_lengths.output,
         all_plasmid_outputs,
         rules.junction_stats.output,

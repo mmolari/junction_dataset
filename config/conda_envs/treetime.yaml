@@ -1,0 +1,8 @@
+name: treetime
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - treetime=0.11.4
+  - biopython
+  - numpy
