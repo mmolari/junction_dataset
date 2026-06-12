@@ -14,6 +14,10 @@ set-resources:
   genomad_run:
     mem_mb: 60000
     cpus_per_task: 4
+  ISEScan_run:
+    cpus_per_task: 4
+    runtime: 180m
+    qos: "6hours"
   build_pangraph:
     cpus_per_task: 8
     runtime: 350m

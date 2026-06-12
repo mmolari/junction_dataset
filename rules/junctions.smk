@@ -1,27 +1,59 @@
 # This snakemake file contains rules to extract variable junctions from the full pangenome graph,
 # and build secondary junction graphs
 
-# load the table of junction positions
-with open(config["junction_positions_file"]) as f:
-    junc_pos = json.load(f)
-# exclude single-isolate junctions
-junc_pos = {j: p for j, p in junc_pos.items() if len(p) > 1}
-# list of junction IDs
-junc_ids = list(junc_pos.keys())
-print(f"N. junctions: {len(junc_ids)}")
+
+checkpoint junction_positions:
+    input:
+        graph=rules.build_pangraph.output,
+    output:
+        csv="results/junction_positions.csv",
+    log:
+        "logs/junction_positions.log",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    params:
+        min_length=config["core_block_min_length"],
+    shell:
+        """
+        python scripts/junction_positions.py \
+            --pangraph {input.graph} \
+            --min_length {params.min_length} \
+            --out_csv {output.csv} \
+            &>{log}
+        """
+
+
+@functools.lru_cache
+def _multi_isolate_junctions():
+    # cached so the checkpoint CSV is parsed once, not on every input-function call
+    # (junction_ids is pulled by both rule all and junction_stats).
+    csv = checkpoints.junction_positions.get().output.csv
+    df = pd.read_csv(csv)
+    counts = df.groupby("edge")["iso"].nunique()
+    return tuple(counts.index[counts > 1])
+
+
+def junction_ids(wildcards):
+    # junction IDs are derived dynamically from the pangraph; keep only junctions
+    # present in more than one isolate (single-isolate junctions are degenerate).
+    return list(_multi_isolate_junctions())
+
+
+def junction_pangraphs(wildcards):
+    return expand(rules.build_junction_pangraph.output, junc=junction_ids(wildcards))
 
 
 rule extract_junction_sequences:
     input:
         gbk=expand(rules.download_gbk.output, acc=acc_nums),
-        j_pos=config["junction_positions_file"],
+        j_pos=rules.junction_positions.output.csv,
     output:
         fa="results/junction_sequences/{junc}.fa",
         gff="results/junction_annotations/{junc}.gff",
     log:
         "logs/extract_junctions/{junc}.log",
     conda:
-        "config/conda_envs/bioinfo.yaml"
+        "../config/conda_envs/bioinfo.yaml"
     shell:
         """
         python scripts/extract_junctions.py \
@@ -30,7 +62,7 @@ rule extract_junction_sequences:
             --junc-pos-file {input.j_pos} \
             --out-fa {output.fa} \
             --out-ann {output.gff} \
-            &> {log}
+            &>{log}
         """
 
 
@@ -49,11 +81,11 @@ rule build_junction_pangraph:
 
 rule junction_stats:
     input:
-        pangraph=expand(rules.build_junction_pangraph.output, junc=junc_ids),
+        pangraph=junction_pangraphs,
     output:
         "results/junction_stats.csv",
     conda:
-        "config/conda_envs/bioinfo.yaml"
+        "../config/conda_envs/bioinfo.yaml"
     shell:
         """
         python scripts/junction_stats.py \
