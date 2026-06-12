@@ -113,6 +113,42 @@ rule defensefinder_preformat:
         """
 
 
+rule ISEScan_run:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+    output:
+        d=directory("data/ISEScan/{acc}"),
+        s="data/ISEScan/{acc}/fasta/{acc}.fa.tsv",
+    log:
+        "logs/ISEScan/{acc}.log",
+    conda:
+        "../config/conda_envs/isescan.yaml"
+    threads: 4
+    shell:
+        """
+        isescan.py --seqfile {input.fa} --output {output.d} --nthread {threads} &>{log}
+        """
+
+
+rule ISEScan_preformat:
+    input:
+        lambda w: expand(rules.ISEScan_run.output.s, acc=acc_nums),
+    output:
+        "results/mges/ISEScan.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/IS_df_preformat.py \
+            --input_tsvs {input} \
+            --output_df {output}
+        """
+
+
+# whether each tool reports element coordinates 0-based; ISEScan is 1-based
+ZERO_BASED = {"genomad": True, "defensefinder": True, "ISEScan": False}
+
+
 rule mge_assign_positions:
     input:
         el="results/mges/{tool}.csv",
@@ -123,7 +159,7 @@ rule mge_assign_positions:
     conda:
         "../config/conda_envs/bioinfo.yaml"
     params:
-        zero_based="--zero_based",
+        zero_based=lambda w: "--zero_based" if ZERO_BASED[w.tool] else "",
         random="",
     shell:
         """
@@ -139,4 +175,7 @@ rule mge_assign_positions:
 
 rule mges_all:
     input:
-        expand(rules.mge_assign_positions.output, tool=["genomad", "defensefinder"]),
+        expand(
+            rules.mge_assign_positions.output,
+            tool=["genomad", "defensefinder", "ISEScan"],
+        ),
