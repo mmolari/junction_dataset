@@ -59,6 +59,19 @@ def load_assignments(assigned_csvs, junc_id):
     return df[df["junction"] == junc_id]
 
 
+def junction_relative_coords(ib, ie, jcb, jce, strand, L):
+    """Map an element interval [ib, ie] (0-based) to coordinates relative to the
+    junction region [jcb, jce] on a length-L circular genome, co-oriented with the
+    canonical edge direction. The junction wraps the origin when jcb >= jce.
+    Returns (start, end, interval_len, is_partial)."""
+    interval_len = jce + L - jcb if jcb >= jce else jce - jcb
+    start, end, is_partial = ut.transform_coordinates(ib, ie, jcb, jce, L)
+    # reverse-orient when the edge is stored in the non-canonical direction
+    if not strand:
+        start, end = interval_len - end, interval_len - start
+    return start, end, interval_len, is_partial
+
+
 def to_gff_entries(annotations):
     gff_entries = []
     for ann in annotations:
@@ -94,29 +107,19 @@ if __name__ == "__main__":
     region_lengths = {}
     for row in assigned.itertuples(index=False):
         iso = row.iso
-        L = iso_L[iso]
-        # full junction region [left_start, right_end]; origin-wrapping when start >= end
-        start, end = row.jcb, row.jce
-        strand = bool(row.j_strand)
-        interval_len = end + L - start if start >= end else end - start
-        region_lengths[iso] = interval_len
-
-        # element coords (already 0-based) transformed relative to the junction interval
-        new_start, new_end, is_partial = ut.transform_coordinates(
-            row.ib, row.ie, start, end, L
+        # element coords (already 0-based) transformed relative to the junction region
+        start, end, interval_len, is_partial = junction_relative_coords(
+            row.ib, row.ie, row.jcb, row.jce, bool(row.j_strand), iso_L[iso]
         )
-
-        # co-orient with the canonical (reverse) edge direction
-        if not strand:
-            new_start, new_end = interval_len - new_end, interval_len - new_start
+        region_lengths[iso] = interval_len
 
         annotations.append(
             {
                 "iso": iso,
                 "ann_id": row.id,
-                "start": new_start,
-                "end": new_end,
-                "strand": strand,
+                "start": start,
+                "end": end,
+                "strand": bool(row.j_strand),
                 "is_partial": is_partial,
                 "type": type_map[row.id],
             }
