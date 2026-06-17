@@ -67,7 +67,8 @@ def test_to_gff_entries_shape_and_attributes():
     assert e["seqid"] == "isoA"
     # source and type both carry the tool category; strand is unused (".")
     assert e["source"] == "IS" and e["type"] == "IS"
-    assert e["start"] == 10 and e["end"] == 30
+    # 0-based half-open [10, 30) -> GFF3 1-based end-inclusive [11, 30]
+    assert e["start"] == 11 and e["end"] == 30
     assert e["score"] == "." and e["strand"] == "." and e["phase"] == "."
     assert e["attributes"] == {"ID": "x1", "is_partial": False, "tool": "IS"}
 

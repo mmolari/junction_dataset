@@ -85,7 +85,8 @@ def to_gff_entries(annotations):
                 "seqid": ann["iso"],
                 "source": ann["type"],
                 "type": ann["type"],
-                "start": ann["start"],
+                # GFF3 is 1-based, end-inclusive: a 0-based half-open [s, e) -> [s+1, e]
+                "start": ann["start"] + 1,
                 "end": ann["end"],
                 "score": ".",
                 "strand": ".",
