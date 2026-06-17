@@ -2,6 +2,11 @@ import argparse
 
 import pandas as pd
 
+# Sentinel for catching origin-wrapping integrons, not a biological size limit:
+# real E. coli integrons span at most tens of kb, whereas a wrap makes the naive
+# min(pos_beg)..max(pos_end) span almost the whole (~Mb) replicon.
+MAX_INTEGRON_BP = 500_000
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -61,12 +66,19 @@ def preformat(dfs: list[pd.DataFrame]) -> pd.DataFrame:
         assert len(types) == 1, f"integron {iso}|{id_integron} has mixed types {types}"
         itype = types[0]
         n = int(id_integron.split("_")[-1])
+        beg, end = int(g["pos_beg"].min()), int(g["pos_end"].max())
+        # min..max is wrong for an origin-wrapping integron (it spans almost the
+        # whole replicon); fail loudly rather than emit a bogus genome-scale span.
+        assert end - beg < MAX_INTEGRON_BP, (
+            f"integron {iso}|{id_integron} span {end - beg} bp exceeds "
+            f"{MAX_INTEGRON_BP} bp (origin-wrapping? needs explicit handling)"
+        )
         rows.append(
             {
                 "id": f"{iso}|{n}|{itype}",
                 "iso": iso,
-                "beg": int(g["pos_beg"].min()),
-                "end": int(g["pos_end"].max()),
+                "beg": beg,
+                "end": end,
                 "type": itype,
             }
         )

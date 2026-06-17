@@ -116,3 +116,18 @@ def test_mixed_type_within_one_integron_raises():
     )
     with pytest.raises(AssertionError):
         preformat([df])
+
+
+def test_origin_wrapping_integron_raises():
+    # an integron wrapping the origin has elements near both replicon ends, so the
+    # naive min..max span is genome-scale and bogus; it should fail loudly
+    import pytest
+
+    df = integrons_table(
+        [
+            ("iso1", "integron_01", 50, 200, "complete"),
+            ("iso1", "integron_01", 4_900_000, 4_900_500, "complete"),
+        ]
+    )
+    with pytest.raises(AssertionError):
+        preformat([df])
