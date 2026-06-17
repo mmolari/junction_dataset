@@ -176,12 +176,50 @@ rule abricate_preformat:
         """
 
 
-# whether each tool reports element coordinates 0-based; ISEScan/abricate are 1-based
+rule integron_finder_run:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+    output:
+        i="data/integron_finder/{acc}/{acc}.integrons",
+    log:
+        "logs/integron_finder/{acc}.log",
+    conda:
+        "../config/conda_envs/integron_finder.yaml"
+    threads: 4
+    params:
+        outdir="data/integron_finder/{acc}",
+    shell:
+        """
+        integron_finder --local-max --func-annot --circ --cpu {threads} \
+            --outdir {params.outdir} {input.fa} &>{log}
+        # IF nests output under Results_Integron_Finder_<name>/; flatten the .integrons
+        cp {params.outdir}/Results_Integron_Finder_*/*.integrons {output.i}
+        """
+
+
+rule integron_finder_preformat:
+    input:
+        lambda w: expand(rules.integron_finder_run.output.i, acc=acc_nums),
+    output:
+        "results/mges/integron_finder.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/integron_finder_df_preformat.py \
+            --input_tsvs {input} \
+            --output_df {output}
+        """
+
+
+# whether each tool reports element coordinates 0-based;
+# ISEScan/abricate/integron_finder are 1-based
 ZERO_BASED = {
     "genomad": True,
     "defensefinder": True,
     "ISEScan": False,
     "abricate": False,
+    "integron_finder": False,
 }
 
 MGE_TOOLS = list(ZERO_BASED)

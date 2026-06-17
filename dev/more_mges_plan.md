@@ -38,18 +38,22 @@ Not MGEs strictly, but valuable MGE cargo that tends to live in MGE-rich regions
   schema has no gene column).
 - **Register**: `ZERO_BASED["abricate"] = False`.
 
-## Tool 2 — Integron_Finder (integrons)
+## Tool 2 — Integron_Finder (integrons) — DONE
 
-- **Env**: `config/conda_envs/integron_finder.yaml` (`integron_finder` from bioconda; bundles HMM
-  models + Resfams for `--func-annot`, no download rule).
-- **Run rule** (per `{acc}`): `integron_finder --local-max --func-annot --circ` over the isolate
-  FASTA. Integron_Finder nests its output under `Results_Integron_Finder_<fasta_basename>/`, so the
-  result table is `data/integron_finder/{acc}/Results_Integron_Finder_{acc}/{acc}.integrons`. Bump
-  SLURM resources (hmmer + prodigal).
+- **Env**: `config/conda_envs/integron_finder.yaml` (`integron_finder` from bioconda). `--func-annot`
+  uses the bundled `NCBIfam-AMRFinder.hmm` — no download rule.
+- **Run rule** `integron_finder_run` (per `{acc}`): `integron_finder --local-max --func-annot --circ`
+  over the isolate FASTA. Integron_Finder nests its output under `Results_Integron_Finder_<name>/`,
+  so the rule flattens the `.integrons` (via the `Results_Integron_Finder_*` glob) to a stable
+  `data/integron_finder/{acc}/{acc}.integrons`. SLURM resources bumped (cpus 4, 6h) — `--local-max`
+  cmsearch is the slow step.
 - **Preformat** `scripts/annotations/integron_finder_df_preformat.py`: skip the leading `#` comment
-  line, group rows per `(ID_replicon, ID_integron)`, `beg = min(pos_beg)`, `end = max(pos_end)`
-  (**1-based**), `iso = ID_replicon`, `id = iso|ID_integron`. Open micro-decision: `type` = the
-  per-integron `type` column (`complete`/`In0`/`CALIN`) vs. a constant `"integron"`.
+  line(s), drop rows with no `ID_integron` (no-integron placeholders), group per
+  `(ID_replicon, ID_integron)`, `beg = min(pos_beg)`, `end = max(pos_end)` (**1-based**),
+  `iso = ID_replicon`, `id = iso|n|type` (`n` parsed from `integron_01` -> `1`). **Decision:**
+  `type` = the per-integron class column (`complete`/`CALIN`/`In0`), following the prior-analysis
+  precedent (`data/junctions/annotations/loc/integronfinder.csv`) — these three classes are
+  biologically distinct, so they are kept rather than flattened to a constant.
 - **Register**: `ZERO_BASED["integron_finder"] = False`.
 
 ## Tool 3 — anti-defense systems

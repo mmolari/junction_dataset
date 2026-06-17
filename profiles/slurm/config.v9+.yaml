@@ -18,6 +18,10 @@ set-resources:
     cpus_per_task: 4
     runtime: 180m
     qos: "6hours"
+  integron_finder_run:
+    cpus_per_task: 4
+    runtime: 180m
+    qos: "6hours"
   build_pangraph:
     cpus_per_task: 8
     runtime: 350m
