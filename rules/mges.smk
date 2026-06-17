@@ -211,10 +211,9 @@ rule abricate_run:
         "logs/abricate/{acc}.log",
     conda:
         "../config/conda_envs/abricate.yaml"
-    threads: 4
     shell:
         """
-        abricate --db card --threads {threads} {input.fa} >{output} 2>{log}
+        abricate --db card {input.fa} >{output} 2>{log}
         """
 
 
