@@ -67,6 +67,8 @@ rule defensefinder_find:
         g="data/defense_finder/{acc}/{acc}_defense_finder_genes.tsv",
         s="data/defense_finder/{acc}/{acc}_defense_finder_systems.tsv",
         p="data/defense_finder/{acc}/{acc}.prt",
+    log:
+        "logs/defense_finder/{acc}.log",
     conda:
         "../config/conda_envs/defensefinder.yaml"
     shell:
@@ -75,7 +77,8 @@ rule defensefinder_find:
             -o {output.a} \
             --models-dir {input.mod} \
             --skip-model-version-check \
-            {input.fa}
+            {input.fa} \
+            &>{log}
         """
 
 
@@ -122,6 +125,8 @@ rule antidefense_find:
         g="data/antidefense_finder/{acc}/{acc}_defense_finder_genes.tsv",
         s="data/antidefense_finder/{acc}/{acc}_defense_finder_systems.tsv",
         p="data/antidefense_finder/{acc}/{acc}.prt",
+    log:
+        "logs/antidefense_finder/{acc}.log",
     conda:
         "../config/conda_envs/defensefinder.yaml"
     shell:
@@ -131,7 +136,8 @@ rule antidefense_find:
             --models-dir {input.mod} \
             --skip-model-version-check \
             --antidefensefinder-only \
-            {input.fa}
+            {input.fa} \
+            &>{log}
         """
 
 
