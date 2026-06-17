@@ -162,7 +162,6 @@ rule mge_assign_positions:
         "../config/conda_envs/bioinfo.yaml"
     params:
         zero_based=lambda w: "--zero_based" if ZERO_BASED[w.tool] else "",
-        random="",
     shell:
         """
         python3 scripts/assign_junctions.py \
@@ -170,8 +169,7 @@ rule mge_assign_positions:
             --junction_pos_csv {input.j_pos} \
             --element_pos_df {input.el} \
             --output_pos {output} \
-            {params.zero_based} \
-            {params.random}
+            {params.zero_based}
         """
 
 
