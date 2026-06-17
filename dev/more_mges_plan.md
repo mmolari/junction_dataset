@@ -56,16 +56,23 @@ Not MGEs strictly, but valuable MGE cargo that tends to live in MGE-rich regions
   biologically distinct, so they are kept rather than flattened to a constant.
 - **Register**: `ZERO_BASED["integron_finder"] = False`.
 
-## Tool 3 — anti-defense systems
+## Tool 3 — anti-defense systems — DONE
 
-DefenseFinder with the `--antidefensefinder-only` flag — the **same binary**, so it reuses
+DefenseFinder with the `-A` / `--antidefensefinder-only` flag — the **same binary**, so it reuses
 `config/conda_envs/defensefinder.yaml` (no new env) and the existing
-`defensefinder_models_download`.
+`defensefinder_models_download` (the anti-defense models ship with `defense-finder update`).
+AntiDefenseFinder is integrated into DefenseFinder and emits the **same unified MacSyFinder output**
+(`{acc}_defense_finder_systems.tsv`, `{acc}_defense_finder_genes.tsv`, `{acc}.prt`, same
+`sys_id/sys_beg/sys_end/type` columns), so the existing gene-location and preformat scripts are
+reused unchanged/parameterized — no new parser.
 
 - **Run rule** `antidefense_find`: mirrors `defensefinder_find` + `--antidefensefinder-only`,
-  writing to a **separate** dir `data/antidefense_finder/{acc}/...` (the output filenames are
-  identical to DefenseFinder's, so they must not share a directory).
-- **Reuse** `defensefinder_gene_location.py` unchanged.
+  writing to a **separate** dir `data/antidefense_finder/{acc}/...` (same input FASTA basename ⇒
+  identical output filenames, so they must not share a directory).
+- **Reuse** `defensefinder_gene_location.py` unchanged (rule `antidefense_gene_location`).
 - **Reuse** `defensefinder_df_preformat.py`, parameterized with a new `--type` arg (default
   `defense_system`); anti-defense passes `--type antidefense_system` → `results/mges/antidefense.csv`.
-- **Register**: `ZERO_BASED["antidefense"] = True` (0-based, mirroring DefenseFinder).
+- **Register**: `ZERO_BASED["antidefense"] = True` (0-based — forced, since anti-defense shares
+  DefenseFinder's exact coordinate-extraction path).
+- **No SLURM bump**: `defensefinder_find` runs on defaults; AntiDefenseFinder-only is a strict
+  subset, so no `set-resources` entry is added.

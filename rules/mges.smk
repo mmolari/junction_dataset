@@ -113,6 +113,63 @@ rule defensefinder_preformat:
         """
 
 
+rule antidefense_find:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+        mod=rules.defensefinder_models_download.output,
+    output:
+        a=directory("data/antidefense_finder/{acc}"),
+        g="data/antidefense_finder/{acc}/{acc}_defense_finder_genes.tsv",
+        s="data/antidefense_finder/{acc}/{acc}_defense_finder_systems.tsv",
+        p="data/antidefense_finder/{acc}/{acc}.prt",
+    conda:
+        "../config/conda_envs/defensefinder.yaml"
+    shell:
+        """
+        defense-finder run \
+            -o {output.a} \
+            --models-dir {input.mod} \
+            --skip-model-version-check \
+            --antidefensefinder-only \
+            {input.fa}
+        """
+
+
+rule antidefense_gene_location:
+    input:
+        g=rules.antidefense_find.output.g,
+        p=rules.antidefense_find.output.p,
+    output:
+        temp("data/antidefense_finder/{acc}/{acc}_genes_loc.tsv"),
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/defensefinder_gene_location.py \
+            --input_gene_df {input.g} \
+            --proteins {input.p} \
+            --output_gene_df {output}
+        """
+
+
+rule antidefense_preformat:
+    input:
+        s=expand(rules.antidefense_find.output.s, acc=acc_nums),
+        g=expand(rules.antidefense_gene_location.output, acc=acc_nums),
+    output:
+        "results/mges/antidefense.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/defensefinder_df_preformat.py \
+            --input_genes {input.g} \
+            --input_systems {input.s} \
+            --type antidefense_system \
+            --output_df {output}
+        """
+
+
 rule ISEScan_run:
     input:
         fa=rules.gbk_to_fa.output.fa,
@@ -213,10 +270,11 @@ rule integron_finder_preformat:
 
 
 # whether each tool reports element coordinates 0-based;
-# ISEScan/abricate/integron_finder are 1-based
+# ISEScan/abricate/integron_finder are 1-based; antidefense mirrors defensefinder
 ZERO_BASED = {
     "genomad": True,
     "defensefinder": True,
+    "antidefense": True,
     "ISEScan": False,
     "abricate": False,
     "integron_finder": False,
