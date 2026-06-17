@@ -145,8 +145,44 @@ rule ISEScan_preformat:
         """
 
 
-# whether each tool reports element coordinates 0-based; ISEScan is 1-based
-ZERO_BASED = {"genomad": True, "defensefinder": True, "ISEScan": False}
+rule abricate_run:
+    input:
+        fa=rules.gbk_to_fa.output.fa,
+    output:
+        "data/abricate/{acc}/{acc}.tsv",
+    log:
+        "logs/abricate/{acc}.log",
+    conda:
+        "../config/conda_envs/abricate.yaml"
+    threads: 4
+    shell:
+        """
+        abricate --db card --threads {threads} {input.fa} >{output} 2>{log}
+        """
+
+
+rule abricate_preformat:
+    input:
+        lambda w: expand(rules.abricate_run.output, acc=acc_nums),
+    output:
+        "results/mges/abricate.csv",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/annotations/abricate_df_preformat.py \
+            --input_tsvs {input} \
+            --output_df {output}
+        """
+
+
+# whether each tool reports element coordinates 0-based; ISEScan/abricate are 1-based
+ZERO_BASED = {
+    "genomad": True,
+    "defensefinder": True,
+    "ISEScan": False,
+    "abricate": False,
+}
 
 MGE_TOOLS = list(ZERO_BASED)
 
