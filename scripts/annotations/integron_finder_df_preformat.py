@@ -34,24 +34,17 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_integrons(path: str) -> pd.DataFrame:
-    """Read one .integrons file, skipping the leading '#' comment line(s).
+    """Read one .integrons file, dropping Integron_Finder's leading '#' comments.
 
     Integron_Finder prefixes the table with a version comment ('# Integron Finder
-    version ...'); the header row ('ID_integron\\tID_replicon\\t...') follows. A
-    genome with no integrons yields a comment-only file ('# No Integron found',
-    no header, no rows) that pandas can't parse, so return an empty frame for it."""
-    with open(path) as fh:
-        lines = fh.readlines()
-    n_comment = 0
-    for line in lines:
-        if line.startswith("#"):
-            n_comment += 1
-        else:
-            break
-    # no header/data beyond the comments -> 'No Integron found'; nothing to parse
-    if not any(line.strip() and not line.startswith("#") for line in lines):
+    version ...') followed by the header row; `comment="#"` strips the comments.
+    A genome with no integrons yields a comment-only file ('# No Integron found',
+    no header, no rows) that pandas can't parse (EmptyDataError), so return an
+    empty frame carrying the columns `preformat` needs for the all-empty concat."""
+    try:
+        return pd.read_csv(path, sep="\t", comment="#")
+    except pd.errors.EmptyDataError:
         return pd.DataFrame(columns=INTEGRON_COLS)
-    return pd.read_csv(path, sep="\t", skiprows=n_comment)
 
 
 def preformat(dfs: list[pd.DataFrame]) -> pd.DataFrame:

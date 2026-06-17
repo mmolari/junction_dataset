@@ -225,7 +225,7 @@ rule abricate_run:
 
 rule abricate_preformat:
     input:
-        lambda w: expand(rules.abricate_run.output, acc=acc_nums),
+        expand(rules.abricate_run.output, acc=acc_nums),
     output:
         "results/mges/abricate.csv",
     conda:
@@ -261,7 +261,7 @@ rule integron_finder_run:
 
 rule integron_finder_preformat:
     input:
-        lambda w: expand(rules.integron_finder_run.output.i, acc=acc_nums),
+        expand(rules.integron_finder_run.output.i, acc=acc_nums),
     output:
         "results/mges/integron_finder.csv",
     conda:
