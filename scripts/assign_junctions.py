@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import argparse
 import utils as ut
 
@@ -88,7 +87,6 @@ def parse_args():
     parser.add_argument(
         "--output_pos", help="Output file with element junction assignment"
     )
-    parser.add_argument("--random", action="store_true", help="Use random positions")
     parser.add_argument(
         "--zero_based",
         action="store_true",
@@ -118,9 +116,6 @@ if __name__ == "__main__":
     # isolates genome length
     iso_L = pd.read_csv(args.iso_len, index_col=0)["length"].to_dict()
 
-    rand_pos = args.random
-    np.random.seed(42)
-
     results = []
 
     for el_id, row in df_element.iterrows():
@@ -131,11 +126,6 @@ if __name__ == "__main__":
         # make 0-based
         if not args.zero_based:
             B, E = B - 1, E - 1
-
-        # optional randomize position
-        if rand_pos:
-            delta_L = np.random.randint(L)
-            B, E = (B + delta_L) % L, (E + delta_L) % L
 
         # locate on joints
         for j, pos_d in junction_positions.items():

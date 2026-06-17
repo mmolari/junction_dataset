@@ -148,6 +148,8 @@ rule ISEScan_preformat:
 # whether each tool reports element coordinates 0-based; ISEScan is 1-based
 ZERO_BASED = {"genomad": True, "defensefinder": True, "ISEScan": False}
 
+MGE_TOOLS = list(ZERO_BASED)
+
 
 rule mge_assign_positions:
     input:
@@ -160,7 +162,6 @@ rule mge_assign_positions:
         "../config/conda_envs/bioinfo.yaml"
     params:
         zero_based=lambda w: "--zero_based" if ZERO_BASED[w.tool] else "",
-        random="",
     shell:
         """
         python3 scripts/assign_junctions.py \
@@ -168,14 +169,38 @@ rule mge_assign_positions:
             --junction_pos_csv {input.j_pos} \
             --element_pos_df {input.el} \
             --output_pos {output} \
-            {params.zero_based} \
-            {params.random}
+            {params.zero_based}
         """
+
+
+rule mge_to_junction_gff:
+    input:
+        assigned=expand(rules.mge_assign_positions.output, tool=MGE_TOOLS),
+        elements=expand("results/mges/{tool}.csv", tool=MGE_TOOLS),
+        iso_len=rules.genome_lengths.output,
+    output:
+        "results/junction_mges/{junc}.gff",
+    log:
+        "logs/mge_to_junction_gff/{junc}.log",
+    conda:
+        "../config/conda_envs/bioinfo.yaml"
+    shell:
+        """
+        python3 scripts/mges_to_gff.py \
+            --junc_id {wildcards.junc} \
+            --mges_to_junctions {input.assigned} \
+            --mges {input.elements} \
+            --iso_len {input.iso_len} \
+            --out_gff {output} \
+            &>{log}
+        """
+
+
+def junction_mge_gffs(wildcards):
+    return expand(rules.mge_to_junction_gff.output, junc=junction_ids(wildcards))
 
 
 rule mges_all:
     input:
-        expand(
-            rules.mge_assign_positions.output,
-            tool=["genomad", "defensefinder", "ISEScan"],
-        ),
+        expand(rules.mge_assign_positions.output, tool=MGE_TOOLS),
+        junction_mge_gffs,
