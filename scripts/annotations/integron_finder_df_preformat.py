@@ -7,6 +7,10 @@ import pandas as pd
 # min(pos_beg)..max(pos_end) span almost the whole (~Mb) replicon.
 MAX_INTEGRON_BP = 500_000
 
+# Columns consumed by preformat; used to build an empty frame for genomes where
+# Integron_Finder found nothing (it then writes a header-less, comment-only file).
+INTEGRON_COLS = ["ID_replicon", "ID_integron", "pos_beg", "pos_end", "type"]
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -33,14 +37,20 @@ def read_integrons(path: str) -> pd.DataFrame:
     """Read one .integrons file, skipping the leading '#' comment line(s).
 
     Integron_Finder prefixes the table with a version comment ('# Integron Finder
-    version ...'); the header row ('ID_integron\\tID_replicon\\t...') follows."""
+    version ...'); the header row ('ID_integron\\tID_replicon\\t...') follows. A
+    genome with no integrons yields a comment-only file ('# No Integron found',
+    no header, no rows) that pandas can't parse, so return an empty frame for it."""
     with open(path) as fh:
-        n_comment = 0
-        for line in fh:
-            if line.startswith("#"):
-                n_comment += 1
-            else:
-                break
+        lines = fh.readlines()
+    n_comment = 0
+    for line in lines:
+        if line.startswith("#"):
+            n_comment += 1
+        else:
+            break
+    # no header/data beyond the comments -> 'No Integron found'; nothing to parse
+    if not any(line.strip() and not line.startswith("#") for line in lines):
+        return pd.DataFrame(columns=INTEGRON_COLS)
     return pd.read_csv(path, sep="\t", skiprows=n_comment)
 
 

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from integron_finder_df_preformat import preformat
+from integron_finder_df_preformat import preformat, read_integrons
 
 # preformat reshapes Integron_Finder .integrons element rows to the unified MGE
 # schema. Each row is one element of an integron; the integron span is
@@ -116,6 +116,29 @@ def test_mixed_type_within_one_integron_raises():
     )
     with pytest.raises(AssertionError):
         preformat([df])
+
+
+def test_read_integrons_no_integron_found(tmp_path):
+    # a genome with no integrons yields a header-less, comment-only file; read_integrons
+    # must return an empty frame (not raise EmptyDataError) so the concat skips it
+    f = tmp_path / "NC_x.integrons"
+    f.write_text(
+        "# integron_finder 2.0.6\n# cmd: integron_finder ...\n# No Integron found\n\n"
+    )
+    out = read_integrons(str(f))
+    assert out.empty
+    assert "ID_integron" in out.columns
+
+
+def test_preformat_skips_empty_no_integron_frames(tmp_path):
+    # the empty frame from a 'No Integron found' file must drop out of the concat,
+    # leaving only the real integron rows
+    f = tmp_path / "NC_x.integrons"
+    f.write_text("# integron_finder\n# No Integron found\n\n")
+    empty = read_integrons(str(f))
+    real = integrons_table([("iso1", "integron_01", 100, 200, "complete")])
+    out = preformat([empty, real])
+    assert out.index.tolist() == ["iso1|1|complete"]
 
 
 def test_origin_wrapping_integron_raises():
