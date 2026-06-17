@@ -18,6 +18,11 @@ def parse_args():
         help="Input system TSV files to concatenate",
     )
     parser.add_argument("--output_df", required=True)
+    parser.add_argument(
+        "--type",
+        default="defense_system",
+        help="Value for the unified 'type' column (e.g. antidefense_system for AntiDefenseFinder).",
+    )
     return parser.parse_args()
 
 
@@ -92,5 +97,5 @@ if __name__ == "__main__":
 
     cols = {"sys_id": "id", "iso": "iso", "sys_beg_bp": "beg", "sys_end_bp": "end"}
     df = sdf.reset_index()[list(cols.keys())].rename(columns=cols)
-    df["type"] = "defense_system"
+    df["type"] = args.type
     df.to_csv(args.output_df, index=False)
