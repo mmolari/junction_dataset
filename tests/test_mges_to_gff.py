@@ -112,3 +112,16 @@ def test_load_assignments_all_empty_returns_empty(tmp_path):
     empty = tmp_path / "ISEScan.csv"
     empty.write_text("")
     assert load_assignments([str(empty)], "J1").empty
+
+
+def test_load_assignments_rejects_non_bool_strand(tmp_path):
+    # a missing j_strand value forces an object/NaN column dtype, where bool("False")
+    # would be True -- the guard must reject it instead of silently flipping strand
+    f = tmp_path / "genomad.csv"
+    f.write_text(
+        ASSIGN_COLS + "\n"
+        "x,J1,iso1,subset,subset,10,20,5,30,8,25,True\n"
+        "y,J1,iso1,subset,subset,1,2,0,5,1,4,\n"
+    )
+    with pytest.raises(AssertionError):
+        load_assignments([str(f)], "J1")

@@ -56,6 +56,12 @@ def load_assignments(assigned_csvs, junc_id):
     if not frames:
         return pd.DataFrame()
     df = pd.concat(frames, ignore_index=True)
+    # j_strand must round-trip as a real bool: pandas only infers bool dtype for a
+    # pure True/False column, so an object dtype here means a stray/NaN value slipped
+    # in and bool("False") would be True -- a silent orientation flip.
+    assert df["j_strand"].dtype == bool, (
+        f"'j_strand' column is {df['j_strand'].dtype}, expected bool"
+    )
     return df[df["junction"] == junc_id]
 
 
