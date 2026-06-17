@@ -219,7 +219,7 @@ rule abricate_run:
         "../config/conda_envs/abricate.yaml"
     shell:
         """
-        abricate --db card {input.fa} >{output} 2>{log}
+        abricate --db ncbi {input.fa} >{output} 2>{log}
         """
 
 
