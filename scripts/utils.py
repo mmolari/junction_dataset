@@ -205,6 +205,35 @@ def transform_coordinates(feat_start, feat_end, interval_start, interval_end, se
     return new_start, new_end, is_partial
 
 
+def merged_relative_coords(parts, interval_start, interval_end, seq_len):
+    """Map a feature's location parts into interval-relative coordinates.
+
+    Iterating parts (not the BioPython location envelope) is what makes compound /
+    origin-wrapping features correct: an origin-spanning gene has parts at both ends
+    of the genome, so its envelope spans the whole chromosome and would spuriously
+    overlap every interval. Only parts actually inside the interval should count.
+
+    parts: list of (part_start, part_end) 0-based half-open tuples.
+    Returns (new_start, new_end, is_partial) for the union of overlapping parts,
+    or None if no part overlaps the interval.
+    """
+    hits = []
+    for p_start, p_end in parts:
+        if not overlaps_interval(p_start, p_end, interval_start, interval_end, seq_len):
+            continue
+        ns, ne, part_partial = transform_coordinates(
+            p_start, p_end, interval_start, interval_end, seq_len
+        )
+        hits.append((ns, ne, part_partial))
+    if not hits:
+        return None
+    new_start = min(h[0] for h in hits)
+    new_end = max(h[1] for h in hits)
+    # partial if any kept part overhangs, or some part fell entirely outside
+    is_partial = any(h[2] for h in hits) or len(hits) < len(parts)
+    return new_start, new_end, is_partial
+
+
 def extract_genbank_annotations(genbank_file, start, end, forward_orientation=True):
     """
     Extract annotations from a GenBank file that overlap with a specified interval.
@@ -246,19 +275,19 @@ def extract_genbank_annotations(genbank_file, start, end, forward_orientation=Tr
     annotations = []
 
     for feature in record.features:
-        # Get feature coordinates
-        feat_start = int(feature.location.start)
-        feat_end = int(feature.location.end)
         feat_strand = feature.location.strand  # 1 for +, -1 for -
 
-        # Check if feature overlaps with interval
-        if not overlaps_interval(feat_start, feat_end, start, end, seq_len):
+        # Transform per-part: a compound/origin-wrapping feature is kept only where
+        # its parts actually overlap the interval (not its whole-genome envelope).
+        parts = [(int(p.start), int(p.end)) for p in feature.location.parts]
+        coords = merged_relative_coords(parts, start, end, seq_len)
+        if coords is None:
             continue
+        new_start, new_end, is_partial = coords
 
-        # Transform coordinates to be relative to the interval
-        new_start, new_end, is_partial = transform_coordinates(
-            feat_start, feat_end, start, end, seq_len
-        )
+        # Envelope coords, kept only for the unnamed-feature fallback ID below.
+        feat_start = int(feature.location.start)
+        feat_end = int(feature.location.end)
 
         # If extracting reverse strand, flip coordinates and strand
         if not forward_orientation:
