@@ -164,44 +164,65 @@ def transform_coordinates(feat_start, feat_end, interval_start, interval_end, se
     """
     Transform feature coordinates to be relative to the extracted interval.
 
+    Both the feature and the interval are arcs on a circle of length seq_len, and
+    each may wrap the origin (start >= end). We split each into its 1-2 genomic
+    arcs, intersect every feature arc with every interval piece *in genomic space*,
+    then shift each intersection by that piece's offset in the interval-local frame.
+    Intersecting arcs before mapping (rather than mapping the two endpoints
+    independently) is what keeps every case correct without special-casing: a
+    feature overhanging the wrap gap, or a whole-genome `source` feature whose
+    endpoints (0 and seq_len) coincide at the origin, both fall out naturally.
+
+    The single-(start, end) return is lossy only when a feature lands in both
+    interval pieces *non-adjacently*, which requires a feature spanning nearly the
+    whole chromosome; the only such feature is `source`, which covers everything and
+    is therefore exact (its two pieces are adjacent). A gene cannot trigger it.
+
     Args:
-        feat_start: int, original feature start
-        feat_end: int, original feature end
+        feat_start: int, original feature start (0-based)
+        feat_end: int, original feature end (0-based, exclusive)
         interval_start: int, interval start
         interval_end: int, interval end
         seq_len: int, sequence length
 
     Returns:
-        tuple: (new_start, new_end, is_partial) where is_partial indicates if the
-               feature only partially overlaps with the interval (has overhangs outside)
+        tuple: (new_start, new_end, is_partial) where is_partial indicates the
+               feature has some extent outside the interval (overhangs / clipped).
     """
-    interval_wraps = interval_start >= interval_end
-
-    if interval_wraps:
-        interval_len = (seq_len - interval_start) + interval_end
-    else:
+    # Interval as genomic pieces, each tagged with its base offset in the local frame.
+    if interval_start < interval_end:  # non-wrapping: one piece
+        pieces = [(interval_start, interval_end, 0)]
         interval_len = interval_end - interval_start
+    else:  # wrapping = [interval_start, seq_len) U [0, interval_end)
+        pre_len = seq_len - interval_start
+        pieces = [(interval_start, seq_len, 0), (0, interval_end, pre_len)]
+        interval_len = pre_len + interval_end
 
-    # Transform coordinates relative to interval start
-    def relative_pos(pos):
-        if interval_wraps:
-            if pos >= interval_start:
-                return pos - interval_start
-            else:
-                return (seq_len - interval_start) + pos
-        else:
-            return pos - interval_start
+    # Feature as genomic arc(s) plus its true (circular) length.
+    if feat_start < feat_end:
+        feat_arcs = [(feat_start, feat_end)]
+        feat_len = feat_end - feat_start
+    else:  # feature wraps the origin
+        feat_arcs = [(feat_start, seq_len), (0, feat_end)]
+        feat_len = (seq_len - feat_start) + feat_end
 
-    new_start = relative_pos(feat_start)
-    new_end = relative_pos(feat_end)
+    # Genomic intersection of every feature arc with every interval piece.
+    segments = []
+    for fs, fe in feat_arcs:
+        for p_start, p_end, base in pieces:
+            lo = max(fs, p_start)
+            hi = min(fe, p_end)
+            if lo < hi:
+                segments.append((base + lo - p_start, base + hi - p_start))
 
-    # Check if feature extends beyond interval boundaries before clipping
-    is_partial = new_start < 0 or new_end > interval_len
+    if not segments:
+        # No overlap. Callers reach this only directly (merged_relative_coords
+        # filters via overlaps_interval first); report an empty, fully-partial span.
+        return 0, 0, True
 
-    # Clip to interval boundaries
-    new_start = max(0, min(new_start, interval_len))
-    new_end = max(0, min(new_end, interval_len))
-
+    new_start = min(s for s, _ in segments)
+    new_end = max(e for _, e in segments)
+    is_partial = sum(e - s for s, e in segments) < feat_len
     return new_start, new_end, is_partial
 
 

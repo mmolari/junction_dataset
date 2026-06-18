@@ -48,6 +48,18 @@ def test_origin_wrapping_real_junction_regression():
     ) == (39467, 82788, 96754, False)
 
 
+def test_wrapping_junction_element_overhangs_boundary():
+    # MGE analog of the ycaL bug: a (non-wrapping) element [8900, 9500] on a wrapping
+    # junction (9000, 1000) starts 100 bp before the left edge, in the excluded gap.
+    # It must clip to 0 and flag partial, not invert (the old code gave start>end here).
+    assert junction_relative_coords(8900, 9500, 9000, 1000, True, 10000) == (
+        0,
+        500,
+        2000,
+        True,
+    )
+
+
 # --- to_gff_entries: GFF3 record shape ----------------------------------------
 
 
